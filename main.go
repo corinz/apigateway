@@ -25,6 +25,7 @@ type api struct {
 	Name   string `json:"Name"`
 	Route  string `json:"Route"`
 	apiEPs []apiEndpoint
+	router *mux.Router
 }
 
 // struct that wraps globals
@@ -41,16 +42,20 @@ func createApiEP(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	apiEP := unmarshalApiEP(r)
 
+	appendApiEP(apiName, apiEP)
+
+	// TODO Add this new EP to the the API's new router (child router)
+	json.NewEncoder(w).Encode(apiEP)
+}
+
+func appendApiEP(apiName string, apiEP apiEndpoint) {
 	for i, api := range apis {
 		if api.Name == apiName {
-			// Writes to global var
+			// Appends to global var
 			apis[i].apiEPs = append(apis[i].apiEPs, apiEP)
 			break
 		}
 	}
-
-	// TODO Add this new EP to the the API's new router (child router)
-	json.NewEncoder(w).Encode(apiEP)
 }
 
 func createApi(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +75,14 @@ func createApi(w http.ResponseWriter, r *http.Request) {
 	apis = append(apis, api)
 
 	// Create new router
-	newApiRouter(api.Name, api.apiEPs[0])
+	newApiRouter(api.Name)
+
+	newHandleFunc(api) // routes to a placeholder method
+	newHandle(api)     // adds child router to main router
+	// TODO Test Route var syntax and if it has been used already
+	//r.HandleFunc("/", exApiEP(apiEP)) // needs updated method
+	//mainRouter.Handle(route, r)
+
 	json.NewEncoder(w).Encode(api)
 }
 
@@ -94,16 +106,26 @@ func listAPIEPs(w http.ResponseWriter, r *http.Request) {
 }
 
 // newApiRouter
-func newApiRouter(route string, apiEP apiEndpoint) {
-	r := newRouter()
-	// TODO Test Route var syntax and if it has been used already
-	r.HandleFunc("/", exApiEP(apiEP)) // needs updated method
-	mainRouter.Handle(route, r)
+func newApiRouter(apiName string) {
+	api := getAPI(apiName)
+	api.router = newRouter()
 }
 
 func newRouter() *mux.Router {
 	r := mux.NewRouter()
 	return r
+}
+
+func newHandleFunc(a api) {
+	a.router.HandleFunc("/", generic)
+}
+
+func newHandle(a api) {
+	mainRouter.Handle(a.Name, a.router)
+}
+
+func generic(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func exApiEP(apiEP apiEndpoint) func(w http.ResponseWriter, r *http.Request) {
