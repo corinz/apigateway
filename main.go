@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -41,26 +42,21 @@ func createApiEP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	apiEP := unmarshalApiEP(r)
+	api := getAPI(apiName)
 
 	appendApiEP(apiName, apiEP)
-
-	// TODO Add this new EP to the the API's new router (child router)
+	newHandleFunc(api, apiEP.Name)
 	json.NewEncoder(w).Encode(apiEP)
 }
 
 func appendApiEP(apiName string, apiEP apiEndpoint) {
-	for i, api := range apis {
-		if api.Name == apiName {
-			// Appends to global var
-			apis[i].apiEPs = append(apis[i].apiEPs, apiEP)
-			break
-		}
-	}
+	// TODO validate this method
+	api := getAPI(apiName)
+	api.apiEPs = append(api.apiEPs, apiEP)
 }
 
 func createApi(w http.ResponseWriter, r *http.Request) {
-	api := unmarshalApi(r)
-	//TODO Test to see if API already exists and validate the Route is unique/valid
+	api := unmarshalApi(r) //TODO Test to see if API already exists and validate the Route is unique/valid
 
 	// Initialize api with root endpoint and append
 	apiRootEP := apiEndpoint{
@@ -73,17 +69,14 @@ func createApi(w http.ResponseWriter, r *http.Request) {
 	}
 	api.apiEPs = append(api.apiEPs, apiRootEP)
 	apis = append(apis, api)
+	apiPtr := getAPI(api.Name)
 
-	// Create new router
-	newApiRouter(api.Name)
+	// Create new subrouter
+	newApiRouter(apiPtr)
 
-	newHandleFunc(api) // routes to a placeholder method
-	newHandle(api)     // adds child router to main router
+	newHandleFunc(apiPtr, api.apiEPs[0].Name)
 	// TODO Test Route var syntax and if it has been used already
-	//r.HandleFunc("/", exApiEP(apiEP)) // needs updated method
-	//mainRouter.Handle(route, r)
-
-	json.NewEncoder(w).Encode(api)
+	json.NewEncoder(w).Encode(&api)
 }
 
 func listAPIs(w http.ResponseWriter, r *http.Request) {
@@ -106,38 +99,29 @@ func listAPIEPs(w http.ResponseWriter, r *http.Request) {
 }
 
 // newApiRouter
-func newApiRouter(apiName string) {
-	api := getAPI(apiName)
-	api.router = newRouter()
+func newApiRouter(api *api) {
+	api.router = mainRouter.PathPrefix("/" + api.Name).Subrouter() // "/{apiName}/"
 }
 
-func newRouter() *mux.Router {
-	r := mux.NewRouter()
-	return r
-}
-
-func newHandleFunc(a api) {
-	a.router.HandleFunc("/", generic)
-}
-
-func newHandle(a api) {
-	mainRouter.Handle(a.Name, a.router)
+func newHandleFunc(a *api, aepName string) {
+	a.router.HandleFunc("/"+aepName, generic) // "/{apiName}/{aepName}/"
 }
 
 func generic(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("This is the generic method executing...")
 }
 
-func exApiEP(apiEP apiEndpoint) func(w http.ResponseWriter, r *http.Request) {
+func exApiEP(apiEP *apiEndpoint) error {
 	// Executes api based on included methods/commands
-	cmd := exec.Command("sleep", "1")
+	cmd := exec.Command("sleep", "30")
 	log.Printf("Running command and waiting for it to finish...")
 	err := cmd.Run()
-	log.Printf("Command finished with error: %v", err)
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(apiEP)
+	if err != nil {
+		log.Printf("Command finished with error: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func execute(w http.ResponseWriter, r *http.Request) {
@@ -147,33 +131,33 @@ func execute(w http.ResponseWriter, r *http.Request) {
 
 	apiEP := getApiEP(apiName, endpoint)
 	// TODO test empty api
-	exApiEP(apiEP)
+	err := exApiEP(apiEP)
+
+	json.NewEncoder(w).Encode(err)
 }
 
-func getAPI(name string) api {
-	var a api
+func getAPI(name string) *api {
 	for i, api := range apis {
 		if api.Name == name {
-			a = apis[i]
-			break
+			return &apis[i]
 		}
 	}
-	return a
+	return nil
 }
 
-func getApiEP(_api string, _apiEP string) apiEndpoint {
-	var a apiEndpoint
+func getApiEP(_api string, _apiEP string) *apiEndpoint {
+	var aep apiEndpoint
 	for _, api := range apis {
 		if api.Name == _api {
 			for _, apiEP := range api.apiEPs {
 				if apiEP.Name == _apiEP {
-					a = apiEP
+					aep = apiEP
 					break
 				}
 			}
 		}
 	}
-	return a
+	return &aep
 }
 
 func unmarshalApi(r *http.Request) api {
