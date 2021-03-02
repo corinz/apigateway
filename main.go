@@ -15,13 +15,13 @@ import (
 type apiEndpoint struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
-	HTTPVerb    string `json:"HttpVerb`
-	Route       string `json:"Route`
+	HTTPVerb    string `json:"HTTPVerb"`
+	Route       string `json:"Route"`
 	Command     string `json:"Command"`
 	UID         int
 }
 
-// API is a struct representing APIEndpoints
+// api is a struct representing APIEndpoints
 type api struct {
 	Name   string `json:"Name"`
 	Route  string `json:"Route"`
@@ -29,36 +29,39 @@ type api struct {
 	router *mux.Router
 }
 
-// struct that wraps globals
-// instantiate it in main()
+// TODO struct that wraps globals, instantiate it in main()
 
-// APIs is a global var representing multiple API structs
+// APIs is a global var representing all of the applictions api structs
 var apis []api
 
-//
-var mainRouter = mux.NewRouter().StrictSlash(true) // make global with intent of attaching new routers
+// mainRouter is the parent router of all application routers
+var mainRouter = mux.NewRouter().StrictSlash(true)
 
-func createApiEP(w http.ResponseWriter, r *http.Request) {
+// createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
+// ../{api}/{endpoint}
+func createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	apiEP := unmarshalApiEP(r)
-	api := getAPI(apiName)
+	api := getAPI(apiName) //TODO return error if not found
+	apiEP := unmarshalAPIEndpoint(r)
 
-	appendApiEP(apiName, apiEP)
+	appendAPIEndpoint(apiName, apiEP)
 	newHandleFunc(api, apiEP.Name)
 	json.NewEncoder(w).Encode(apiEP)
 }
 
-func appendApiEP(apiName string, apiEP apiEndpoint) {
-	// TODO validate this method
+// appendAPIEndpoint adds an endpoint to the apiEPs slice
+func appendAPIEndpoint(apiName string, apiEP apiEndpoint) {
 	api := getAPI(apiName)
 	api.apiEPs = append(api.apiEPs, apiEP)
 }
 
-func createApi(w http.ResponseWriter, r *http.Request) {
-	api := unmarshalApi(r) //TODO Test to see if API already exists and validate the Route is unique/valid
+// createAPI
+// ../{api}
+func createAPI(w http.ResponseWriter, r *http.Request) {
+	api := unmarshalAPI(r) //TODO Test to see if API already exists and validate the Route is unique/valid
 
-	// Initialize api with root endpoint and append
+	// Create root endpoint and append to new api
 	apiRootEP := apiEndpoint{
 		Name:        api.Name + "/rootEP",
 		Description: api.Name + "/rootEP",
@@ -67,22 +70,26 @@ func createApi(w http.ResponseWriter, r *http.Request) {
 		UID:         0,
 		Command:     "whoami",
 	}
-	api.apiEPs = append(api.apiEPs, apiRootEP)
-	apis = append(apis, api)
+	api.apiEPs = append(api.apiEPs, apiRootEP) // TODO write a setter method for this
+	apis = append(apis, api)                   // TODO write a setter method for this
 	apiPtr := getAPI(api.Name)
 
-	// Create new subrouter
-	newApiRouter(apiPtr)
+	// create new subrouter
+	newAPIRouter(apiPtr)
 
-	newHandleFunc(apiPtr, api.apiEPs[0].Name)
-	// TODO Test Route var syntax and if it has been used already
+	// add new HandleFunc to subrouter
+	newHandleFunc(apiPtr, api.apiEPs[0].Name) // TODO Test Route var syntax and if it has been used already
 	json.NewEncoder(w).Encode(&api)
 }
 
+// listAPIs writes json encoded apis struct to the response writer
+// ../
 func listAPIs(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(apis)
 }
 
+// listAPI writes json encoded api struct to the response writer
+// ../{api}
 func listAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
@@ -90,52 +97,56 @@ func listAPI(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(api)
 }
 
-func listAPIEPs(w http.ResponseWriter, r *http.Request) {
+// listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
+// ../{api}/{endpoint}
+func listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
-	ep := getApiEP(apiName, epName)
+	ep := getAPIEndpoint(apiName, epName)
 	json.NewEncoder(w).Encode(ep)
 }
 
-// newApiRouter
-func newApiRouter(api *api) {
+// newAPIRouter creates a subrouter from the parent router
+func newAPIRouter(api *api) {
 	api.router = mainRouter.PathPrefix("/" + api.Name).Subrouter() // "/{apiName}/"
 }
 
+// newHandleFunc creates a new route on the subrouter
 func newHandleFunc(a *api, aepName string) {
 	a.router.HandleFunc("/"+aepName, generic) // "/{apiName}/{aepName}/"
 }
 
+// generic is a placeholder method
 func generic(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is the generic method executing...")
 }
 
-func exApiEP(apiEP *apiEndpoint) error {
-	// Executes api based on included methods/commands
-	cmd := exec.Command("sleep", "30")
-	log.Printf("Running command and waiting for it to finish...")
+// execute executes the command found in the apiEndpoint.Command struct-field
+func execute(apiEP *apiEndpoint) error {
+	cmd := exec.Command("sleep", "30") // TODO this is hardcoded for now
+	log.Printf("Running command...")
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("Command finished with error: %v", err)
 		return err
 	}
-
+	log.Printf("Execution complete")
 	return nil
 }
 
-func execute(w http.ResponseWriter, r *http.Request) {
+// executeAPIEndpoint locates the apiEndpoint struct and calls execute()
+func executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	endpoint := vars["endpoint"]
 
-	apiEP := getApiEP(apiName, endpoint)
-	// TODO test empty api
-	err := exApiEP(apiEP)
-
+	apiEP := getAPIEndpoint(apiName, endpoint)
+	err := execute(apiEP) // TODO handle error, return error code/message
 	json.NewEncoder(w).Encode(err)
 }
 
+// getAPI accepts name argument and returns pointer to api
 func getAPI(name string) *api {
 	for i, api := range apis {
 		if api.Name == name {
@@ -145,22 +156,22 @@ func getAPI(name string) *api {
 	return nil
 }
 
-func getApiEP(_api string, _apiEP string) *apiEndpoint {
-	var aep apiEndpoint
+// getAPIEndpoint accepts api & apiEndpoint name and returns a pointer to the apiEndpoint
+func getAPIEndpoint(apiName string, apiEPName string) *apiEndpoint {
 	for _, api := range apis {
-		if api.Name == _api {
+		if api.Name == apiName {
 			for _, apiEP := range api.apiEPs {
-				if apiEP.Name == _apiEP {
-					aep = apiEP
-					break
+				if apiEP.Name == apiEPName {
+					return &apiEP
 				}
 			}
 		}
 	}
-	return &aep
+	return nil
 }
 
-func unmarshalApi(r *http.Request) api {
+// unmarshalAPI accepts http request and returns unmarshalled api struct
+func unmarshalAPI(r *http.Request) api {
 	//TODO error handle and payload validation
 	body, _ := ioutil.ReadAll(r.Body)
 	var a api
@@ -169,8 +180,9 @@ func unmarshalApi(r *http.Request) api {
 	return a
 }
 
-func unmarshalApiEP(r *http.Request) apiEndpoint {
-	//TODO error handle _
+// unmarshalAPIEndpoint accepts http request and returns unmarshalled apiEndpoint struct
+func unmarshalAPIEndpoint(r *http.Request) apiEndpoint {
+	//TODO error handle and payload validation
 	body, _ := ioutil.ReadAll(r.Body)
 	var apiEP apiEndpoint
 	json.Unmarshal(body, &apiEP)
@@ -182,12 +194,12 @@ func startup() {
 	// GETs
 	mainRouter.HandleFunc("/", listAPIs).Methods("GET")
 	mainRouter.HandleFunc("/{api}", listAPI).Methods("GET")
-	mainRouter.HandleFunc("/{api}/{endpoint}", listAPIEPs).Methods("GET")
+	mainRouter.HandleFunc("/{api}/{endpoint}", listAPIEndpoints).Methods("GET")
 
 	// POSTs
-	mainRouter.HandleFunc("/", createApi).Methods("POST")
-	mainRouter.HandleFunc("/{api}", createApiEP).Methods("POST")
-	mainRouter.HandleFunc("/{api}/{endpoint}", execute).Methods("POST")
+	mainRouter.HandleFunc("/", createAPI).Methods("POST")
+	mainRouter.HandleFunc("/{api}", createAPIEndpoint).Methods("POST")
+	mainRouter.HandleFunc("/{api}/{endpoint}", executeAPIEndpoint).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", mainRouter))
 }
