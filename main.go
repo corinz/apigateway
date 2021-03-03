@@ -41,8 +41,9 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	apiEP := unmarshalAPIEndpoint(r)
 
-	ar.appendEndpoint(apiName, apiEP)
-	ar.newHandleFunc(apiName)
+	a := ar.getAPI(apiName)
+	a.appendEndpoint(apiEP)
+	a.newHandleFunc()
 	json.NewEncoder(w).Encode(apiEP)
 }
 
@@ -51,8 +52,11 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 	api := unmarshalAPI(r) //TODO Test to see if API already exists and validate the Route is unique/valid
 
+	// Appends api
+	ar.addAPI(api)
+
 	// Create root endpoint and append to new api
-	apiRootEP := apiEndpoint{
+	root := apiEndpoint{
 		Name:        "default",
 		Description: "default endpoint",
 		HTTPVerb:    "GET",
@@ -60,36 +64,18 @@ func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 		UID:         0,
 		Command:     "whoami",
 	}
-	api.apiEPs = append(api.apiEPs, apiRootEP) // TODO write a setter method for this
-	ar.apis = append(ar.apis, api)             // TODO write a setter method for this
 
-	// create new subrouter
-	ar.newAPIRouter(api.Name)
+	a := ar.getAPI(api.Name)
+	a.appendEndpoint(root)
+	a.newAPIRouter(ar)
+	a.newHandleFunc()
 
-	// add new HandleFunc to subrouter
-	ar.newHandleFunc(api.Name) // TODO Test Route var syntax and if it has been used already
 	json.NewEncoder(w).Encode(&api)
 }
 
-// newAPIRouter creates a subrouter from the parent router
-func (ar *apiRouter) newAPIRouter(name string) {
-	api := ar.getAPI(name)
-	api.router = ar.r.PathPrefix("/" + name).Subrouter() // "/{apiName}/"
-}
-
-// newHandleFunc creates a new route on the subrouter
-func (ar *apiRouter) newHandleFunc(apiName string) {
-	api := ar.getAPI(apiName)
-	if api == nil {
-		log.Printf("API %v not found", apiName)
-	}
-	api.router.HandleFunc("/"+apiName, generic) // "/{apiName}/{aepName}/"
-}
-
-// appendEndpoint appends an endpoint to the apiEPs slice
-func (ar *apiRouter) appendEndpoint(apiName string, apiEP apiEndpoint) {
-	api := ar.getAPI(apiName)
-	api.apiEPs = append(api.apiEPs, apiEP)
+// addAPI appends to api slice
+func (ar *apiRouter) addAPI(a api) {
+	ar.apis = append(ar.apis, a)
 }
 
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
@@ -98,8 +84,7 @@ func (ar *apiRouter) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) 
 	apiName := vars["api"]
 	endpoint := vars["endpoint"]
 
-	apiEP := ar.getAPIEndpoint(apiName, endpoint)
-	err := apiEP.execute() // TODO handle error, return error code/message
+	err := ar.getAPI(apiName).getAPIEndpoint(endpoint).execute()
 	json.NewEncoder(w).Encode(err)
 }
 
@@ -108,20 +93,6 @@ func (ar *apiRouter) getAPI(name string) *api {
 	for i, api := range ar.apis {
 		if api.Name == name {
 			return &ar.apis[i]
-		}
-	}
-	return nil
-}
-
-// getAPIEndpoint accepts api & apiEndpoint name and returns a pointer to the apiEndpoint
-func (ar *apiRouter) getAPIEndpoint(apiName string, apiEPName string) *apiEndpoint {
-	for _, api := range ar.apis {
-		if api.Name == apiName {
-			for _, apiEP := range api.apiEPs {
-				if apiEP.Name == apiEPName {
-					return &apiEP
-				}
-			}
 		}
 	}
 	return nil
@@ -138,8 +109,7 @@ func (ar *apiRouter) listAPIs(w http.ResponseWriter, r *http.Request) {
 func (ar *apiRouter) listAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	api := ar.getAPI(apiName)
-	json.NewEncoder(w).Encode(api)
+	json.NewEncoder(w).Encode(ar.getAPI(apiName))
 }
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
@@ -148,8 +118,33 @@ func (ar *apiRouter) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
-	ep := ar.getAPIEndpoint(apiName, epName)
+	ep := ar.getAPI(apiName).getAPIEndpoint(epName)
 	json.NewEncoder(w).Encode(ep)
+}
+
+// newAPIRouter creates a subrouter from the parent router
+func (a *api) newAPIRouter(ar *apiRouter) {
+	a.router = ar.r.PathPrefix("/" + a.Name).Subrouter() // "/{apiName}/"
+}
+
+// newHandleFunc creates a new route on the subrouter
+func (a *api) newHandleFunc() {
+	a.router.HandleFunc("/"+a.Name, generic) // "/{apiName}/{aepName}/"
+}
+
+// appendEndpoint appends an endpoint to the apiEPs slice
+func (a *api) appendEndpoint(aep apiEndpoint) {
+	a.apiEPs = append(a.apiEPs, aep)
+}
+
+// getAPIEndpoint returns a pointer to the endpoint struct or nil if not found
+func (a *api) getAPIEndpoint(apiEPName string) *apiEndpoint {
+	for _, apiEP := range a.apiEPs {
+		if apiEP.Name == apiEPName {
+			return &apiEP
+		}
+	}
+	return nil
 }
 
 // execute executes the command found in the apiEndpoint.Command struct-field
