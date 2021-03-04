@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -42,7 +43,7 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	// return if API does not exist
 	a := ar.getAPI(apiName)
 	if a == nil {
-		log.Printf("Requested API object does not exist")
+		log.Printf("ERROR: createAPIEndpoint: Requested API object does not exist")
 		http.Error(w, "Requested object does not exist", http.StatusNotFound)
 		return
 	}
@@ -51,7 +52,7 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	apiEP := unmarshalAPIEndpoint(r)
 	apiEP.parentPtr = a
 	if ar.exists(apiEP) {
-		log.Printf("Requested API Endpoint object exists")
+		log.Printf("ERROR: createAPIEndpoint: Requested API Endpoint object exists")
 		http.Error(w, "Requested object exists", http.StatusConflict)
 		return
 	}
@@ -64,9 +65,13 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 // createAPI
 // ../{api}
 func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
-	api := unmarshalAPI(r)
+	api, err := unmarshalAPI(r)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
 	if ar.exists(api) {
-		log.Printf("Requested API object exists")
+		log.Printf("ERROR: createAPI: Requested API object exists")
 		http.Error(w, "Requested object exists", http.StatusConflict)
 		return
 	}
@@ -146,7 +151,7 @@ func (ar *apiRouter) listAPIs(w http.ResponseWriter, r *http.Request) {
 func (ar *apiRouter) listAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	json.NewEncoder(w).Encode(ar.getAPI(apiName))
+	json.NewEncoder(w).Encode(ar.getAPI(apiName).apiEPs)
 }
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
@@ -203,18 +208,30 @@ func generic(w http.ResponseWriter, r *http.Request) {
 }
 
 // unmarshalAPI accepts http request and returns unmarshalled api struct
-func unmarshalAPI(r *http.Request) api {
+func unmarshalAPI(r *http.Request) (api, error) {
 	//TODO error handle and payload validation
+	// check for min required vars
+	// is json invalid, parms are blank
+	// TODO combine with other unmarshal function
 	body, _ := ioutil.ReadAll(r.Body)
 	var a api
+	if json.Valid(body) == false {
+		log.Printf("ERROR: unmarshalAPI: JSON Invalid")
+		return a, errors.New("ERROR: unmarshalAPI: JSON Invalid")
+	}
 	json.Unmarshal(body, &a)
 
-	return a
+	if a.Name == "" {
+		log.Printf("ERROR: unmarshalAPI: Required parm missing")
+		return a, errors.New("ERROR: unmarshalAPI: Required parm missing")
+	}
+	return a, nil
 }
 
 // unmarshalAPIEndpoint accepts http request and returns unmarshalled apiEndpoint struct
 func unmarshalAPIEndpoint(r *http.Request) apiEndpoint {
 	//TODO error handle and payload validation
+	// check for min required vars
 	body, _ := ioutil.ReadAll(r.Body)
 	var apiEP apiEndpoint
 	json.Unmarshal(body, &apiEP)
