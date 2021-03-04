@@ -30,7 +30,7 @@ type apiEndpoint struct {
 	HTTPVerb    string `json:"HTTPVerb"`
 	Command     string `json:"Command"`
 	UID         int
-	parentPtr   *api // TODO needs to be populated in code, recently added. also, rethink methods that dont take advantage of this pointing existing
+	parentPtr   *api
 }
 
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
@@ -39,17 +39,19 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 
-	// does API exist?
+	// return if API does not exist
 	a := ar.getAPI(apiName)
 	if a == nil {
-		http.Error(w, "Requested object exists", http.StatusNotFound)
+		log.Printf("Requested API object does not exist")
+		http.Error(w, "Requested object does not exist", http.StatusNotFound)
 		return
 	}
 
-	// init endpoint
+	// init endpoint, return if endpoint exists
 	apiEP := unmarshalAPIEndpoint(r)
 	apiEP.parentPtr = a
 	if ar.exists(apiEP) {
+		log.Printf("Requested API Endpoint object exists")
 		http.Error(w, "Requested object exists", http.StatusConflict)
 		return
 	}
@@ -64,6 +66,7 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 	api := unmarshalAPI(r)
 	if ar.exists(api) {
+		log.Printf("Requested API object exists")
 		http.Error(w, "Requested object exists", http.StatusConflict)
 		return
 	}
@@ -94,14 +97,14 @@ func (ar *apiRouter) exists(thing interface{}) bool {
 	switch thing.(type) {
 	case api:
 		a := thing.(api)
-		if ar.getAPI(a.Name) == nil { // if API not found
-			return false
+		if ar.getAPI(a.Name) != nil { // if API found
+			return true
 		}
 	case apiEndpoint:
 		aep := thing.(apiEndpoint)
 		api := aep.parentPtr
-		if api.getAPIEndpoint(aep.Name) == nil { // if API Endpoint not found
-			return false
+		if api.getAPIEndpoint(aep.Name) != nil { // if API Endpoint found
+			return true
 		}
 	}
 	return false
@@ -183,7 +186,7 @@ func (a *api) getAPIEndpoint(apiEPName string) *apiEndpoint {
 
 // execute executes the command found in the apiEndpoint.Command struct-field
 func (aep *apiEndpoint) execute() error {
-	cmd := exec.Command("sleep", "30") // TODO this is hardcoded for now
+	cmd := exec.Command("sleep", "5") // TODO this is hardcoded for now
 	log.Printf("Running command...")
 	err := cmd.Run()
 	if err != nil {
