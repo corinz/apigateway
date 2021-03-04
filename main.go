@@ -19,7 +19,6 @@ type apiRouter struct {
 // api is a struct representing APIEndpoints
 type api struct {
 	Name   string `json:"Name"`
-	Route  string `json:"Route"`
 	apiEPs []apiEndpoint
 	router *mux.Router
 }
@@ -29,9 +28,9 @@ type apiEndpoint struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
 	HTTPVerb    string `json:"HTTPVerb"`
-	Route       string `json:"Route"`
 	Command     string `json:"Command"`
 	UID         int
+	parentPtr   *api // TODO needs to be populated in code, recently added. also, rethink methods that dont take advantage of this pointing existing
 }
 
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
@@ -39,9 +38,22 @@ type apiEndpoint struct {
 func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	apiEP := unmarshalAPIEndpoint(r)
 
+	// does API exist?
 	a := ar.getAPI(apiName)
+	if a == nil {
+		http.Error(w, "Requested object exists", http.StatusNotFound)
+		return
+	}
+
+	// init endpoint
+	apiEP := unmarshalAPIEndpoint(r)
+	apiEP.parentPtr = a
+	if ar.exists(apiEP) {
+		http.Error(w, "Requested object exists", http.StatusConflict)
+		return
+	}
+
 	a.appendEndpoint(apiEP)
 	a.newHandleFunc()
 	json.NewEncoder(w).Encode(apiEP)
@@ -50,7 +62,11 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 // createAPI
 // ../{api}
 func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
-	api := unmarshalAPI(r) //TODO Test to see if API already exists and validate the Route is unique/valid
+	api := unmarshalAPI(r)
+	if ar.exists(api) {
+		http.Error(w, "Requested object exists", http.StatusConflict)
+		return
+	}
 
 	// Appends api
 	ar.addAPI(api)
@@ -60,7 +76,6 @@ func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 		Name:        "default",
 		Description: "default endpoint",
 		HTTPVerb:    "GET",
-		Route:       "/",
 		UID:         0,
 		Command:     "whoami",
 	}
@@ -71,6 +86,25 @@ func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 	a.newHandleFunc()
 
 	json.NewEncoder(w).Encode(&api)
+}
+
+// exists checks to see if an interface of type api or apiEndpoint exist
+func (ar *apiRouter) exists(thing interface{}) bool {
+
+	switch thing.(type) {
+	case api:
+		a := thing.(api)
+		if ar.getAPI(a.Name) == nil { // if API not found
+			return false
+		}
+	case apiEndpoint:
+		aep := thing.(apiEndpoint)
+		api := aep.parentPtr
+		if api.getAPIEndpoint(aep.Name) == nil { // if API Endpoint not found
+			return false
+		}
+	}
+	return false
 }
 
 // addAPI appends to api slice

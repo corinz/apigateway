@@ -20,7 +20,6 @@ curl \
       "Name": "testEP",
       "Description": "My EP",
       "HTTPVerb": "POST",
-      "Route": "/testEP",
       "Command": "sleep 30"
       }' \
   http://localhost:8080/myservice 
