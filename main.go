@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -134,7 +135,12 @@ func (ar *apiRouter) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) 
 	endpoint := vars["endpoint"]
 
 	err := ar.getAPI(apiName).getAPIEndpoint(endpoint).execute()
-	json.NewEncoder(w).Encode(err)
+	if err != nil {
+		errStr := "ERROR: executeAPIEndpoint:" + err.Error()
+		log.Printf(errStr)
+		http.Error(w, errStr, http.StatusInternalServerError)
+		return
+	}
 }
 
 // getAPI accepts name argument and returns pointer to api
@@ -198,11 +204,12 @@ func (a *api) getAPIEndpoint(apiEPName string) *apiEndpoint {
 
 // execute executes the command found in the apiEndpoint.Command struct-field
 func (aep *apiEndpoint) execute() error {
-	cmd := exec.Command("sleep", "5") // TODO this is hardcoded for now
-	log.Printf("Running command...")
+	s := strings.Split(aep.Command, " ")
+
+	cmd := exec.Command(s[0], s[1:]...)
+	log.Printf("Running command: %v", cmd.Args)
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("Command finished with error: %v", err)
 		return err
 	}
 	log.Printf("Execution complete")

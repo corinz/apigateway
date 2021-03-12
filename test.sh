@@ -4,7 +4,7 @@
 curl \
   --header "Content-Type: application/json" \
   --request POST \
-  --data '{"name":"myservice","route":"myservice"}' \
+  --data '{"name":"myservice"}' \
   http://localhost:8080 
 
 # Get list of all APIs
