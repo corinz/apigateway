@@ -1,38 +1,28 @@
-package main
+package APIGateway
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os/exec"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-type apiRouter struct {
-	r    *mux.Router
-	apis []api
-}
+func Startup() {
+	apiGW := newAPIGateway()
 
-// api is a struct representing APIEndpoints
-type api struct {
-	Name   string `json:"Name"`
-	apiEPs []apiEndpoint
-	router *mux.Router
-}
+	// GETs
+	apiGW.r.HandleFunc("/", apiGW.listAPIs).Methods("GET")
+	apiGW.r.HandleFunc("/{api}", apiGW.listAPI).Methods("GET")
+	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.listAPIEndpoints).Methods("GET")
 
-// apiEndpoint is a struct representing a single API Endpoint with a route and http verb
-type apiEndpoint struct {
-	Name        string `json:"Name"`
-	Description string `json:"Description"`
-	HTTPVerb    string `json:"HTTPVerb"`
-	Command     string `json:"Command"`
-	UID         int
-	parentPtr   *api
+	// POSTs
+	apiGW.r.HandleFunc("/", apiGW.createAPI).Methods("POST")
+	apiGW.r.HandleFunc("/{api}", apiGW.createAPIEndpoint).Methods("POST")
+	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.executeAPIEndpoint).Methods("POST")
+
+	log.Fatal(http.ListenAndServe(":8080", apiGW.r))
 }
 
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
@@ -143,16 +133,6 @@ func (ar *apiRouter) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// getAPI accepts name argument and returns pointer to api
-func (ar *apiRouter) getAPI(name string) *api {
-	for i, api := range ar.apis {
-		if api.Name == name {
-			return &ar.apis[i]
-		}
-	}
-	return nil
-}
-
 // listAPIs writes json encoded apis struct to the response writer
 // ../
 func (ar *apiRouter) listAPIs(w http.ResponseWriter, r *http.Request) {
@@ -177,109 +157,7 @@ func (ar *apiRouter) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ep)
 }
 
-// newAPIRouter creates a subrouter from the parent router
-func (a *api) newAPIRouter(ar *apiRouter) {
-	a.router = ar.r.PathPrefix("/" + a.Name).Subrouter() // "/{apiName}/"
-}
-
-// newHandleFunc creates a new route on the subrouter
-func (a *api) newHandleFunc() {
-	a.router.HandleFunc("/"+a.Name, generic) // "/{apiName}/{aepName}/"
-}
-
-// appendEndpoint appends an endpoint to the apiEPs slice
-func (a *api) appendEndpoint(aep apiEndpoint) {
-	a.apiEPs = append(a.apiEPs, aep)
-}
-
-// getAPIEndpoint returns a pointer to the endpoint struct or nil if not found
-func (a *api) getAPIEndpoint(apiEPName string) *apiEndpoint {
-	for _, apiEP := range a.apiEPs {
-		if apiEP.Name == apiEPName {
-			return &apiEP
-		}
-	}
-	return nil
-}
-
-// execute executes the command found in the apiEndpoint.Command struct-field
-func (aep *apiEndpoint) execute() error {
-	s := strings.Split(aep.Command, " ")
-
-	cmd := exec.Command(s[0], s[1:]...)
-	log.Printf("Running command: %v", cmd.Args)
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-	log.Printf("Execution complete")
-	return nil
-}
-
 // generic is a placeholder method
 func generic(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is the generic method executing...")
-}
-
-// unmarshalAPI accepts http request and returns unmarshalled api struct
-// Checks if json is valid and if 'Name' parm exists
-func unmarshalAPI(r *http.Request) (api, error) {
-	//TODO Combine with other unmarshal func
-	body, _ := ioutil.ReadAll(r.Body)
-	var a api
-	if json.Valid(body) == false {
-		err := errors.New("ERROR: unmarshalAPI: JSON Invalid")
-		log.Printf(err.Error())
-		return a, err
-	}
-	json.Unmarshal(body, &a)
-
-	if a.Name == "" {
-		err := errors.New("ERROR: unmarshalAPI: Required parm missing")
-		log.Printf(err.Error())
-		return a, err
-	}
-	return a, nil
-}
-
-// unmarshalAPIEndpoint accepts http request and returns unmarshalled apiEndpoint struct
-func unmarshalAPIEndpoint(r *http.Request) (apiEndpoint, error) {
-	body, _ := ioutil.ReadAll(r.Body)
-	var apiEP apiEndpoint
-	if json.Valid(body) == false {
-		err := errors.New("ERROR: unmarshalAPIEndpoint: JSON Invalid")
-		log.Printf(err.Error())
-		return apiEP, err
-	}
-	json.Unmarshal(body, &apiEP)
-
-	if apiEP.Name == "" {
-		err := errors.New("ERROR: unmarshalAPIEndpoint: Required parm missing")
-		log.Printf(err.Error())
-		return apiEP, err
-	}
-
-	return apiEP, nil
-}
-
-// NewAPIGateway inits a new apiRouter struct
-func newAPIGateway() *apiRouter {
-	r := mux.NewRouter().StrictSlash(true)
-	return &apiRouter{r: r}
-}
-
-func main() {
-	apiGW := newAPIGateway()
-
-	// GETs
-	apiGW.r.HandleFunc("/", apiGW.listAPIs).Methods("GET")
-	apiGW.r.HandleFunc("/{api}", apiGW.listAPI).Methods("GET")
-	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.listAPIEndpoints).Methods("GET")
-
-	// POSTs
-	apiGW.r.HandleFunc("/", apiGW.createAPI).Methods("POST")
-	apiGW.r.HandleFunc("/{api}", apiGW.createAPIEndpoint).Methods("POST")
-	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.executeAPIEndpoint).Methods("POST")
-
-	log.Fatal(http.ListenAndServe(":8080", apiGW.r))
 }
