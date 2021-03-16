@@ -1,4 +1,2 @@
-github.com/corinz/go-api-gateway v0.0.0-20210316173411-73f4ce6dc545 h1:rHkTkdbMR0sSjZkrBRAdOT6UvtTp4rwo0eVdNs17lmA=
-github.com/corinz/go-api-gateway v0.0.0-20210316173411-73f4ce6dc545/go.mod h1:y2LByl3G9Cfb7+IUw15a3Klkpv5sk6DP91X6iMiBmsQ=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
