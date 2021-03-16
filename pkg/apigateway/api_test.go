@@ -1,4 +1,4 @@
-package APIGateway
+package apigateway
 
 import (
 	"bytes"
