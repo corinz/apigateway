@@ -12,11 +12,13 @@ import (
 )
 
 // TODO, use json as strings, eliminate need to unmarshal objects and test struct fields
-
+// TODO go testing only works with -run flag, go test . and go test api_test.go return different errors
 var URL string = "http://localhost:8080"
 
 func TestWebServerRunning(t *testing.T) {
-	go Startup()
+	a := app{}
+	go a.Startup()
+	defer a.Shutdown()
 	_, err := http.Get("http://localhost:8080")
 	if err != nil {
 		t.Error()
@@ -24,7 +26,10 @@ func TestWebServerRunning(t *testing.T) {
 }
 
 func TestAPICreate(t *testing.T) {
-	go Startup()
+	a := app{}
+	go a.Startup()
+	defer a.Shutdown()
+
 	var json = []byte(`{"Name":"testAPI"}`)
 
 	// test for true negative error
@@ -35,7 +40,9 @@ func TestAPICreate(t *testing.T) {
 }
 
 func TestAPIEndpoint(t *testing.T) {
-	go Startup()
+	a := app{}
+	go a.Startup()
+	defer a.Shutdown()
 
 	// API Create
 	var json = []byte(`{"Name":"testAPI"}`)
@@ -55,7 +62,9 @@ func TestAPIEndpoint(t *testing.T) {
 }
 
 func TestBadCreate(t *testing.T) {
-	go Startup()
+	a := app{}
+	go a.Startup()
+	defer a.Shutdown()
 
 	// Existing API
 	var json = []byte(`{"Name":"testAPI"}`)
