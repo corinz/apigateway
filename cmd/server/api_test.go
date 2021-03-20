@@ -1,4 +1,4 @@
-package apigateway
+package main
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	agw "github.com/corinz/apigateway/pkg/apigateway"
 )
 
 // TODO, use json as strings, eliminate need to unmarshal objects and test struct fields
@@ -85,7 +87,7 @@ func getReq(url string) error {
 		return errors.New("json invalid")
 	}
 
-	var a api // any struct with 'Name' field can be used
+	var a agw.Api // any struct with 'Name' field can be used
 	json.Unmarshal(body, &a)
 
 	if a.Name == "" {
@@ -141,8 +143,8 @@ func makeJSONReq(jsonStr []byte, endpoint string, nameTest string, mode bool) er
 }
 
 // readJSONAPI unmarshals byte slice to api struct and tests the 'Name' field
-func readJSONAPI(resp *http.Response) (api, error) {
-	var a api
+func readJSONAPI(resp *http.Response) (agw.Api, error) {
+	var a agw.Api
 
 	// Get body
 	body, err := ioutil.ReadAll(resp.Body)
@@ -154,8 +156,8 @@ func readJSONAPI(resp *http.Response) (api, error) {
 }
 
 // readJSONAPIEndpoint unmarshals byte slice to apiEndpoint struct and tests the 'Name' field
-func readJSONAPIEndpoint(resp *http.Response) (apiEndpoint, error) {
-	var a apiEndpoint
+func readJSONAPIEndpoint(resp *http.Response) (agw.ApiEndpoint, error) {
+	var a agw.ApiEndpoint
 
 	// Get body
 	body, err := ioutil.ReadAll(resp.Body)

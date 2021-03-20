@@ -9,25 +9,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Startup() {
-	apiGW := newAPIGateway()
-
-	// GETs
-	apiGW.r.HandleFunc("/", apiGW.listAPIs).Methods("GET")
-	apiGW.r.HandleFunc("/{api}", apiGW.listAPI).Methods("GET")
-	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.listAPIEndpoints).Methods("GET")
-
-	// POSTs
-	apiGW.r.HandleFunc("/", apiGW.createAPI).Methods("POST")
-	apiGW.r.HandleFunc("/{api}", apiGW.createAPIEndpoint).Methods("POST")
-	apiGW.r.HandleFunc("/{api}/{endpoint}", apiGW.executeAPIEndpoint).Methods("POST")
-
-	log.Fatal(http.ListenAndServe(":8080", apiGW.r))
-}
-
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
 // ../{api}/{endpoint}
-func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 
@@ -61,7 +45,7 @@ func (ar *apiRouter) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 // createAPI
 // ../{api}
-func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) CreateAPI(w http.ResponseWriter, r *http.Request) {
 	api, err := unmarshalAPI(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -78,7 +62,7 @@ func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 	ar.addAPI(api)
 
 	// Create root endpoint and append to new api
-	root := apiEndpoint{
+	root := ApiEndpoint{
 		Name:        "default",
 		Description: "default endpoint",
 		HTTPVerb:    "GET",
@@ -94,32 +78,8 @@ func (ar *apiRouter) createAPI(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&api)
 }
 
-// exists checks to see if an interface of type api or apiEndpoint exist
-func (ar *apiRouter) exists(thing interface{}) bool {
-
-	switch thing.(type) {
-	case api:
-		a := thing.(api)
-		if ar.getAPI(a.Name) != nil { // if API found
-			return true
-		}
-	case apiEndpoint:
-		aep := thing.(apiEndpoint)
-		api := aep.parentPtr
-		if api.getAPIEndpoint(aep.Name) != nil { // if API Endpoint found
-			return true
-		}
-	}
-	return false
-}
-
-// addAPI appends to api slice
-func (ar *apiRouter) addAPI(a api) {
-	ar.apis = append(ar.apis, a)
-}
-
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
-func (ar *apiRouter) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) ExecuteAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	endpoint := vars["endpoint"]
@@ -135,13 +95,13 @@ func (ar *apiRouter) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) 
 
 // listAPIs writes json encoded apis struct to the response writer
 // ../
-func (ar *apiRouter) listAPIs(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) ListAPIs(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ar.apis)
 }
 
 // listAPI writes json encoded api struct to the response writer
 // ../{api}
-func (ar *apiRouter) listAPI(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) ListAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	json.NewEncoder(w).Encode(ar.getAPI(apiName).apiEPs)
@@ -149,7 +109,7 @@ func (ar *apiRouter) listAPI(w http.ResponseWriter, r *http.Request) {
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
 // ../{api}/{endpoint}
-func (ar *apiRouter) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
+func (ar *apiRouter) ListAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
@@ -158,6 +118,6 @@ func (ar *apiRouter) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 }
 
 // generic is a placeholder method
-func generic(w http.ResponseWriter, r *http.Request) {
+func Generic(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is the generic method executing...")
 }
