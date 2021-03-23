@@ -2,24 +2,24 @@ package apigateway
 
 import "github.com/gorilla/mux"
 
-type apiRouter struct {
-	R    *mux.Router
-	apis []Api
+//TODO get rid of this struct?
+type APIs struct {
+	APIArr []API
 }
 
-// Api is a struct representing APIEndpoints
-type Api struct {
+// API is a struct representing APIEndpoints
+type API struct {
 	Name   string `json:"Name"`
-	apiEPs []ApiEndpoint
-	router *mux.Router
+	APIEPs []APIEndpoint
+	Router *mux.Router
 }
 
-// ApiEndpoint is a struct representing a single API Endpoint with a route and http verb
-type ApiEndpoint struct {
+// APIEndpoint is a struct representing a single API Endpoint with a route and http verb
+type APIEndpoint struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
 	HTTPVerb    string `json:"HTTPVerb"`
 	Command     string `json:"Command"`
 	UID         int
-	parentPtr   *Api
+	ParentPtr   *API
 }

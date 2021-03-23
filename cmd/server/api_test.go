@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/corinz/apigateway/internal/app"
 	agw "github.com/corinz/apigateway/pkg/apigateway"
 )
 
@@ -16,69 +17,67 @@ import (
 var URL string = "http://localhost:8080"
 
 func TestWebServerRunning(t *testing.T) {
-	a := app{}
-	go a.Startup()
-	defer a.Shutdown()
+	app := app.NewApp()
+	go app.Startup()
+	defer app.Shutdown()
 	_, err := http.Get("http://localhost:8080")
 	if err != nil {
-		t.Error()
+		t.Error(err)
 	}
 }
 
 func TestAPICreate(t *testing.T) {
-	a := app{}
-	go a.Startup()
-	defer a.Shutdown()
+	app := app.NewApp()
+	go app.Startup()
+	defer app.Shutdown()
 
 	var json = []byte(`{"Name":"testAPI"}`)
 
 	// test for true negative error
 	err := makeJSONReq(json, "/", "testAPI", true)
 	if err != nil {
-		t.Error()
+		t.Error(err)
 	}
 }
 
 func TestAPIEndpoint(t *testing.T) {
-	a := app{}
-	go a.Startup()
-	defer a.Shutdown()
+	app := app.NewApp()
+	go app.Startup()
+	defer app.Shutdown()
 
 	// API Create
 	var json = []byte(`{"Name":"testAPI"}`)
 	err := makeJSONReq(json, "/", "testAPI", true)
 	if err != nil {
-		t.Error()
+		t.Error(err)
 	}
 
 	// API Endpoint create
 	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","Command": "sleep 5"}`)
-
-	// test for true positive error
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	if err != nil {
-		t.Error()
+		t.Error(err)
 	}
 }
 
 func TestBadCreate(t *testing.T) {
-	a := app{}
-	go a.Startup()
-	defer a.Shutdown()
+	app := app.NewApp()
+	go app.Startup()
+	defer app.Shutdown()
 
 	// Existing API
 	var json = []byte(`{"Name":"testAPI"}`)
 	err := makeJSONReq(json, "/", "testAPI", true)
 	err = makeJSONReq(json, "/", "testAPI", true)
 	if err == nil {
-		t.Error()
+		t.Error(err)
 	}
 
 	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","Command": "sleep 5"}`)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	if err == nil {
-		t.Error()
+		t.Error(err)
 	}
 }
 
@@ -96,7 +95,7 @@ func getReq(url string) error {
 		return errors.New("json invalid")
 	}
 
-	var a agw.Api // any struct with 'Name' field can be used
+	var a agw.API // any struct with 'Name' field can be used
 	json.Unmarshal(body, &a)
 
 	if a.Name == "" {
@@ -136,15 +135,15 @@ func makeJSONReq(jsonStr []byte, endpoint string, nameTest string, mode bool) er
 			return err
 		}
 		if a.Name != nameTest {
-			return errors.New("server returned invalid struct")
+			return errors.New("server returned invalid struct" + a.Name + " != " + nameTest)
 		}
 	} else { // apiEndpoint struct
-		a, err := readJSONAPIEndpoint(resp)
+		a, err := readJSONAPI(resp) // TODO readJSONAPIEndpoint() does not unmarshal struct correctly
 		if err != nil {
 			return err
 		}
-		if a.Name != nameTest {
-			return errors.New("server returned invalid struct")
+		if a.APIEPs[1].Name != nameTest { // TODO bandaid fix
+			return errors.New("server returned invalid struct " + a.Name + " != " + nameTest)
 		}
 	}
 
@@ -152,8 +151,8 @@ func makeJSONReq(jsonStr []byte, endpoint string, nameTest string, mode bool) er
 }
 
 // readJSONAPI unmarshals byte slice to api struct and tests the 'Name' field
-func readJSONAPI(resp *http.Response) (agw.Api, error) {
-	var a agw.Api
+func readJSONAPI(resp *http.Response) (agw.API, error) {
+	var a agw.API
 
 	// Get body
 	body, err := ioutil.ReadAll(resp.Body)
@@ -164,9 +163,10 @@ func readJSONAPI(resp *http.Response) (agw.Api, error) {
 	return a, nil
 }
 
+// TODO the main app will return a slice (APIEPs) and needs to be treated as such
 // readJSONAPIEndpoint unmarshals byte slice to apiEndpoint struct and tests the 'Name' field
-func readJSONAPIEndpoint(resp *http.Response) (agw.ApiEndpoint, error) {
-	var a agw.ApiEndpoint
+func readJSONAPIEndpoint(resp *http.Response) (agw.APIEndpoint, error) {
+	var a agw.APIEndpoint
 
 	// Get body
 	body, err := ioutil.ReadAll(resp.Body)

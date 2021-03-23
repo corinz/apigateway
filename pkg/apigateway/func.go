@@ -6,22 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
+	//"github.com/gorilla/mux"
 )
-
-// NewAPIGateway inits a new apiRouter struct
-func NewAPIGateway() *apiRouter {
-	r := mux.NewRouter().StrictSlash(true)
-	return &apiRouter{R: r}
-}
 
 // unmarshalAPI accepts http request and returns unmarshalled api struct
 // Checks if json is valid and if 'Name' parm exists
-func unmarshalAPI(r *http.Request) (Api, error) {
+func UnmarshalAPI(r *http.Request) (API, error) {
 	//TODO Combine with other unmarshal func
 	body, _ := ioutil.ReadAll(r.Body)
-	var a Api
+	var a API
 	if json.Valid(body) == false {
 		err := errors.New("ERROR: unmarshalAPI: JSON Invalid")
 		log.Printf(err.Error())
@@ -38,9 +31,9 @@ func unmarshalAPI(r *http.Request) (Api, error) {
 }
 
 // unmarshalAPIEndpoint accepts http request and returns unmarshalled apiEndpoint struct
-func unmarshalAPIEndpoint(r *http.Request) (ApiEndpoint, error) {
+func UnmarshalAPIEndpoint(r *http.Request) (APIEndpoint, error) {
 	body, _ := ioutil.ReadAll(r.Body)
-	var apiEP ApiEndpoint
+	var apiEP APIEndpoint
 	if json.Valid(body) == false {
 		err := errors.New("ERROR: unmarshalAPIEndpoint: JSON Invalid")
 		log.Printf(err.Error())
