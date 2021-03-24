@@ -20,7 +20,7 @@ type app struct {
 func NewApp() *app {
 	r := mux.NewRouter().StrictSlash(true)
 	s := &http.Server{Addr: ":8080", Handler: r}
-	a := &agw.APIs{} //TODO Unnecessary?
+	a := &agw.APIs{}
 	return &app{router: r, server: s, apis: a}
 }
 
@@ -31,12 +31,12 @@ func (a *app) Start(addr string) error {
 
 // TODO error check empty or existing name
 func (a *app) addSubRouter(api *agw.API) {
-	api.Router = a.router.PathPrefix(api.Name).Subrouter() // "/{apiName}/"
+	api.Router = a.router.PathPrefix("/" + api.Name).Subrouter() // "/{apiName}/"
 }
 
 // TODO error check empty or existing name
-func (a *app) newHandleFunc(api *agw.API) {
-	api.Router.HandleFunc("/"+api.Name, Generic) // "/{apiName}/{aepName}/"
+func (a *app) newHandleFunc(api *agw.API, subPath string) {
+	api.Router.HandleFunc("/"+subPath, Generic) // "/{apiName}/{aepName}/"
 }
 
 func (a *app) Startup() {

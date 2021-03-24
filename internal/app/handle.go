@@ -41,7 +41,7 @@ func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiPtr.AppendEndpoint(apiEP)
-	a.newHandleFunc(apiPtr)
+	a.newHandleFunc(apiPtr, apiEP.Name)
 	json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name)) //TODO validate this new output var
 }
 
@@ -78,7 +78,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 
 	// Add router & handle
 	a.addSubRouter(apiPtr)
-	a.newHandleFunc(apiPtr)
+	a.newHandleFunc(apiPtr, "")
 
 	json.NewEncoder(w).Encode(apiPtr)
 }
@@ -109,7 +109,7 @@ func (a *app) ListAPIs(w http.ResponseWriter, r *http.Request) {
 func (a *app) ListAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	json.NewEncoder(w).Encode(a.apis.GetAPI(apiName).APIEPs)
+	json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
 }
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
@@ -119,7 +119,6 @@ func (a *app) ListAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	epName := vars["endpoint"]
 	ep := a.apis.GetAPI(apiName).GetAPIEndpoint(epName)
-	fmt.Println("ep:", ep)
 	json.NewEncoder(w).Encode(ep) //TODO encoding doesnt work for this struct
 }
 
