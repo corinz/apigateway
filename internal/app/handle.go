@@ -42,7 +42,10 @@ func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	apiPtr.AppendEndpoint(apiEP)
 	a.newHandleFunc(apiPtr, apiEP.Name)
-	json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name)) //TODO validate this new output var
+	err = json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // createAPI
@@ -72,7 +75,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 		HTTPVerb:    "GET",
 		UID:         0,
 		Command:     "whoami",
-		// ParentPtr:   apiPtr, // TODO this prevents object from being necoded and returned
+		ParentPtr:   apiPtr,
 	}
 	apiPtr.AppendEndpoint(root)
 
@@ -80,7 +83,10 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 	a.addSubRouter(apiPtr)
 	a.newHandleFunc(apiPtr, "")
 
-	json.NewEncoder(w).Encode(apiPtr)
+	err = json.NewEncoder(w).Encode(apiPtr)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
@@ -101,7 +107,10 @@ func (a *app) ExecuteAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 // listAPIs writes json encoded apis struct to the response writer
 // ../
 func (a *app) ListAPIs(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(a.apis.APIArr)
+	err := json.NewEncoder(w).Encode(a.apis.APIArr)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // listAPI writes json encoded api struct to the response writer
@@ -109,7 +118,10 @@ func (a *app) ListAPIs(w http.ResponseWriter, r *http.Request) {
 func (a *app) ListAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
+	err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
@@ -119,7 +131,10 @@ func (a *app) ListAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	epName := vars["endpoint"]
 	ep := a.apis.GetAPI(apiName).GetAPIEndpoint(epName)
-	json.NewEncoder(w).Encode(ep) //TODO encoding doesnt work for this struct
+	err := json.NewEncoder(w).Encode(ep) //TODO encoding doesnt work for this struct
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // generic is a placeholder method
