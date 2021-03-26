@@ -11,15 +11,19 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func errHandler(w *http.ResponseWriter, errCode int, errStr string) {
+	log.Printf(errStr)
+	http.Error(*w, errStr, errCode)
+}
+
+// record is a handlefunc decorator that marshals and saves the APIs struct to a file
 func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			endpoint(w, r)
 			err := a.MarshalSave()
 			if err != nil {
-				errStr := "ERROR: createAPIEndpoint: Unable to marshal and save app data"
-				log.Printf(errStr)
-				http.Error(w, errStr, http.StatusInternalServerError)
+				errHandler(&w, http.StatusInternalServerError, "ERROR: createAPIEndpoint: Unable to marshal and save app data")
 				// TODO revert changes if unable to save
 			}
 		})
@@ -34,23 +38,19 @@ func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	// error and return if API does not exist
 	apiPtr := a.apis.GetAPI(apiName)
 	if apiPtr == nil {
-		errStr := "ERROR: createAPIEndpoint: Requested API object does not exist"
-		log.Printf(errStr)
-		http.Error(w, errStr, http.StatusNotFound)
+		errHandler(&w, http.StatusNotFound, "ERROR: createAPIEndpoint: Requested API object does not exist")
 		return
 	}
 
 	// init endpoint, error and return if endpoint is invalid or exists
 	apiEP, err := agw.UnmarshalAPIEndpoint(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errHandler(&w, http.StatusBadRequest, "ERROR: createAPIEndpoint: "+err.Error())
 		return
 	}
 	apiEP.ParentName = apiPtr.Name
 	if a.apis.Exists(apiEP) {
-		errStr := "ERROR: createAPIEndpoint: Requested API Endpoint object exists"
-		log.Printf(errStr)
-		http.Error(w, errStr, http.StatusConflict)
+		errHandler(&w, 409, "ERROR: createAPIEndpoint: Requested API Endpoint object exists")
 		return
 	}
 
@@ -69,9 +69,7 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.apis.Exists(api) {
-		errStr := "ERROR: createAPI: Requested API object exists"
-		log.Printf(errStr)
-		http.Error(w, errStr, http.StatusConflict)
+		errHandler(&w, http.StatusConflict, "ERROR: createAPI: Requested API object exists")
 		return
 	}
 
@@ -106,9 +104,7 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err := a.apis.GetAPI(apiName).GetAPIEndpoint(endpoint).Execute()
 	if err != nil {
-		errStr := "ERROR: executeAPIEndpoint:" + err.Error()
-		log.Printf(errStr)
-		http.Error(w, errStr, http.StatusInternalServerError)
+		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
 		return
 	}
 }
@@ -118,7 +114,7 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(a.apis.APIArr)
 	if err != nil {
-		log.Println(err)
+		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIs: "+err.Error())
 	}
 }
 
@@ -129,7 +125,7 @@ func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
 	if err != nil {
-		log.Println(err)
+		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPI: "+err.Error())
 	}
 }
 
@@ -142,7 +138,7 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	ep := a.apis.GetAPI(apiName).GetAPIEndpoint(epName)
 	err := json.NewEncoder(w).Encode(ep) //TODO encoding doesnt work for this struct
 	if err != nil {
-		log.Println(err)
+		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
 }
 
