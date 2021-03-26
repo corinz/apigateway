@@ -11,6 +11,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func (a *app) record (endpoint func(http.ResponseWriter, *http.Request) ) func(http.ResponseWriter, *http.Request) {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			endpoint(w, r)
+			err := a.MarshalSave()
+			if err != nil {
+				errStr := "ERROR: createAPIEndpoint: Unable to marshal and save app data"
+				log.Printf(errStr)
+				http.Error(w, errStr, http.StatusInternalServerError)
+				// TODO revert changes if unable to save
+			}
+		})
+}
+
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
 // ../{api}/{endpoint}
 func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -42,10 +56,8 @@ func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	apiPtr.AppendEndpoint(apiEP)
 	a.newHandleFunc(apiPtr, apiEP.Name)
-	err = json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name))
-	if err != nil {
-		log.Println(err)
-	}
+
+	json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name))
 }
 
 // createAPI
@@ -83,10 +95,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 	a.addSubRouter(apiPtr)
 	a.newHandleFunc(apiPtr, "")
 
-	err = json.NewEncoder(w).Encode(apiPtr)
-	if err != nil {
-		log.Println(err)
-	}
+	json.NewEncoder(w).Encode(apiPtr)
 }
 
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()

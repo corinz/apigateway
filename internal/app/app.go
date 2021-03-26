@@ -48,8 +48,8 @@ func (a *app) Startup() {
 	a.router.HandleFunc("/{api}/{endpoint}", a.ListAPIEndpoints).Methods("GET")
 
 	// POSTs
-	a.router.HandleFunc("/", a.CreateAPI).Methods("POST")
-	a.router.HandleFunc("/{api}", a.CreateAPIEndpoint).Methods("POST")
+	a.router.HandleFunc("/", a.record(a.CreateAPI)).Methods("POST")
+	a.router.HandleFunc("/{api}", a.record(a.CreateAPIEndpoint)).Methods("POST")
 	a.router.HandleFunc("/{api}/{endpoint}", a.ExecuteAPIEndpoint).Methods("POST")
 
 	log.Fatal(a.server.ListenAndServe())
