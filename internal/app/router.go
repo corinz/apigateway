@@ -23,4 +23,3 @@ func (a *app) setupRoutes() {
 	a.router.HandleFunc("/{api}", a.record(a.CreateAPIEndpoint)).Methods("POST")
 	a.router.HandleFunc("/{api}/{endpoint}", a.ExecuteAPIEndpoint).Methods("POST")
 }
-

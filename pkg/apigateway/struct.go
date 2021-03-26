@@ -21,5 +21,5 @@ type APIEndpoint struct {
 	HTTPVerb    string `json:"HTTPVerb"`
 	Command     string `json:"Command"`
 	UID         int
-	ParentName   string
+	ParentName  string
 }

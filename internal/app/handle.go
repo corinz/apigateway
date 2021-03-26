@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (a *app) record (endpoint func(http.ResponseWriter, *http.Request) ) func(http.ResponseWriter, *http.Request) {
+func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			endpoint(w, r)
@@ -87,7 +87,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 		HTTPVerb:    "GET",
 		UID:         0,
 		Command:     "whoami",
-		ParentName:   apiPtr.Name,
+		ParentName:  apiPtr.Name,
 	}
 	apiPtr.AppendEndpoint(root)
 
