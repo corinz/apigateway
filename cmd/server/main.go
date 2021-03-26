@@ -6,5 +6,5 @@ import (
 
 func main() {
 	a := app.NewApp()
-	a.Startup()
+	a.Startup(":8080")
 }

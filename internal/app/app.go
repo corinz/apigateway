@@ -19,18 +19,14 @@ type app struct {
 
 func NewApp() *app {
 	r := mux.NewRouter().StrictSlash(true)
-	s := &http.Server{Addr: ":8080", Handler: r}
+	s := &http.Server{Handler: r}
 	a := &agw.APIs{}
 	return &app{router: r, server: s, apis: a}
 }
 
-func (a *app) Start(addr string) error {
-	a.server.Addr = addr
-	return a.server.ListenAndServe()
-}
-
-func (a *app) Startup() {
+func (a *app) Startup(addr string) {
 	a.setupRoutes()
+	a.server.Addr = addr
 	log.Fatal(a.server.ListenAndServe())
 }
 
