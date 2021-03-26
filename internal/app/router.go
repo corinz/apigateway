@@ -9,17 +9,17 @@ func (a *app) addSubRouter(api *agw.API) {
 
 // TODO error check empty or existing name
 func (a *app) newHandleFunc(api *agw.API, subPath string) {
-	api.Router.HandleFunc("/"+subPath, Generic) // "/{apiName}/{aepName}/"
+	api.Router.HandleFunc("/"+subPath, generic) // "/{apiName}/{aepName}/"
 }
 
 func (a *app) setupRoutes() {
 	// GETs
-	a.router.HandleFunc("/", a.ListAPIs).Methods("GET")
-	a.router.HandleFunc("/{api}", a.ListAPI).Methods("GET")
-	a.router.HandleFunc("/{api}/{endpoint}", a.ListAPIEndpoints).Methods("GET")
+	a.router.HandleFunc("/", a.listAPIs).Methods("GET")
+	a.router.HandleFunc("/{api}", a.listAPI).Methods("GET")
+	a.router.HandleFunc("/{api}/{endpoint}", a.listAPIEndpoints).Methods("GET")
 
 	// POSTs
-	a.router.HandleFunc("/", a.record(a.CreateAPI)).Methods("POST")
-	a.router.HandleFunc("/{api}", a.record(a.CreateAPIEndpoint)).Methods("POST")
-	a.router.HandleFunc("/{api}/{endpoint}", a.ExecuteAPIEndpoint).Methods("POST")
+	a.router.HandleFunc("/", a.record(a.createAPI)).Methods("POST")
+	a.router.HandleFunc("/{api}", a.record(a.createAPIEndpoint)).Methods("POST")
+	a.router.HandleFunc("/{api}/{endpoint}", a.executeAPIEndpoint).Methods("POST")
 }

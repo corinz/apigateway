@@ -27,7 +27,7 @@ func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(htt
 
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
 // ../{api}/{endpoint}
-func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 
@@ -62,7 +62,7 @@ func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 // createAPI
 // ../{api}
-func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
+func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 	api, err := agw.UnmarshalAPI(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -99,7 +99,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
-func (a *app) ExecuteAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	endpoint := vars["endpoint"]
@@ -115,7 +115,7 @@ func (a *app) ExecuteAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 // listAPIs writes json encoded apis struct to the response writer
 // ../
-func (a *app) ListAPIs(w http.ResponseWriter, r *http.Request) {
+func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
 	err := json.NewEncoder(w).Encode(a.apis.APIArr)
 	if err != nil {
 		log.Println(err)
@@ -124,7 +124,7 @@ func (a *app) ListAPIs(w http.ResponseWriter, r *http.Request) {
 
 // listAPI writes json encoded api struct to the response writer
 // ../{api}
-func (a *app) ListAPI(w http.ResponseWriter, r *http.Request) {
+func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
@@ -135,7 +135,7 @@ func (a *app) ListAPI(w http.ResponseWriter, r *http.Request) {
 
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
 // ../{api}/{endpoint}
-func (a *app) ListAPIEndpoints(w http.ResponseWriter, r *http.Request) {
+func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
@@ -147,6 +147,6 @@ func (a *app) ListAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 }
 
 // generic is a placeholder method
-func Generic(w http.ResponseWriter, r *http.Request) {
+func generic(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is the generic method executing...")
 }
