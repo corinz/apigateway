@@ -17,7 +17,7 @@ func (apis *APIs) Exists(thing interface{}) bool {
 		}
 	case APIEndpoint:
 		aep := thing.(APIEndpoint)
-		api := aep.ParentPtr
+		api := apis.GetAPI(aep.ParentName)
 		if api.GetAPIEndpoint(aep.Name) != nil { // if API Endpoint found
 			return true
 		}

@@ -32,7 +32,7 @@ func (a *app) CreateAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	apiEP.ParentPtr = apiPtr
+	apiEP.ParentName = apiPtr.Name
 	if a.apis.Exists(apiEP) {
 		errStr := "ERROR: createAPIEndpoint: Requested API Endpoint object exists"
 		log.Printf(errStr)
@@ -75,7 +75,7 @@ func (a *app) CreateAPI(w http.ResponseWriter, r *http.Request) {
 		HTTPVerb:    "GET",
 		UID:         0,
 		Command:     "whoami",
-		ParentPtr:   apiPtr,
+		ParentName:   apiPtr.Name,
 	}
 	apiPtr.AppendEndpoint(root)
 
