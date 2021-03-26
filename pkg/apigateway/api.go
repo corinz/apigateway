@@ -1,10 +1,32 @@
 package apigateway
 
 import (
+	"github.com/gorilla/mux"
 	"log"
 	"os/exec"
 	"strings"
 )
+
+type APIs struct {
+	APIArr []API
+}
+
+// API is a struct representing APIEndpoints
+type API struct {
+	Name   string `json:"Name"`
+	APIEPs []APIEndpoint
+	Router *mux.Router
+}
+
+// APIEndpoint is a struct representing a single API Endpoint with a route and http verb
+type APIEndpoint struct {
+	Name        string `json:"Name"`
+	Description string `json:"Description"`
+	HTTPVerb    string `json:"HTTPVerb"`
+	Command     string `json:"Command"`
+	UID         int
+	ParentName  string
+}
 
 // exists checks to see if an interface of type api or apiEndpoint exist
 func (apis *APIs) Exists(thing interface{}) bool {
