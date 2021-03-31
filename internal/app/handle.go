@@ -18,15 +18,13 @@ func errHandler(w *http.ResponseWriter, errCode int, errStr string) {
 
 // record is a handlefunc decorator that marshals and saves the APIs struct to a file
 func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			endpoint(w, r)
-			err := a.MarshalSave()
-			if err != nil {
-				errHandler(&w, http.StatusInternalServerError, "ERROR: createAPIEndpoint: Unable to marshal and save app data")
-				// TODO revert changes if unable to save
-			}
-		})
+	return func(w http.ResponseWriter, r *http.Request) {
+		endpoint(w, r)
+		if err := a.MarshalSave(); err != nil {
+			errHandler(&w, http.StatusInternalServerError, "ERROR: createAPIEndpoint: Unable to marshal and save app data")
+			// TODO revert changes if unable to save
+		}
+	}
 }
 
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
@@ -70,24 +68,12 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 		errHandler(&w, http.StatusConflict, "ERROR: createAPI: Requested API object exists")
 		return
 	}
-
-	// Appends api
 	a.apis.AddAPI(api)
-
 	apiPtr := a.apis.GetAPI(api.Name)
 
-	// Create root endpoint and append to new api
-	defaultRequest := agw.Request{
-		RequestBody: "",
-		RequestURL:  "https://httpbin.org/get",
-		RequestVerb: "GET",
-	}
-	defaultEndpoint := agw.APIEndpoint{
-		Name:        "default",
-		Description: "default endpoint",
-		ParentName:  apiPtr.Name,
-		Request:     defaultRequest,
-	}
+	// Create default endpoint and append to new api
+	defaultRequest := agw.Request{RequestBody: "", RequestURL: "https://httpbin.org/get", RequestVerb: "GET"}
+	defaultEndpoint := agw.APIEndpoint{Name: "default", Description: "default endpoint", ParentName: apiPtr.Name, Request: defaultRequest}
 	apiPtr.AppendEndpoint(defaultEndpoint)
 
 	json.NewEncoder(w).Encode(apiPtr)
@@ -101,28 +87,30 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// Execute endpoint
 	resp, err := a.apis.GetAPI(apiName).GetAPIEndpoint(endpoint).Execute()
-	defer resp.Body.Close()
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+		return
 	}
+	defer resp.Body.Close() // Response body not closed by Execute()
 
-	if resp.StatusCode == http.StatusOK { // Write response body
+	if resp.StatusCode == http.StatusOK { // if OK, get & write resp
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+			return
 		}
 		bodyString := string(bodyBytes)
 		json.NewEncoder(w).Encode(bodyString)
 	} else {
 		errHandler(&w, resp.StatusCode, "ERROR: executeAPIEndpoint:"+resp.Status)
+		return
 	}
 }
 
 // listAPIs writes json encoded apis struct to the response writer
 // ../
 func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
-	err := json.NewEncoder(w).Encode(a.apis.APIArr)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(a.apis.APIArr); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIs: "+err.Error())
 	}
 }
@@ -132,8 +120,7 @@ func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
 func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName))
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName)); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPI: "+err.Error())
 	}
 }
@@ -145,8 +132,7 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	epName := vars["endpoint"]
 	ep := a.apis.GetAPI(apiName).GetAPIEndpoint(epName)
-	err := json.NewEncoder(w).Encode(ep) //TODO encoding doesnt work for this struct
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(ep); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
 }

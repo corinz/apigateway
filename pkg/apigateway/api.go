@@ -1,39 +1,38 @@
 package apigateway
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 )
 
+// APIs represents a slice of type: API
 type APIs struct {
 	APIArr []API
 }
 
-// API is a struct representing APIEndpoints
+// API represents a slice of type: APIEndpoint
 type API struct {
 	Name   string `json:"Name"`
 	APIEPs []APIEndpoint
-	Router *mux.Router
 }
 
-// APIEndpoint is a struct representing a single API Endpoint with a route and http verb
+// APIEndpoint represents a single API Endpoint and is populated by the API user
 type APIEndpoint struct {
-	Name        string `json:"Name"`
-	Description string `json:"Description"`
-	ParentName  string
+	Name        string  `json:"Name"`
+	Description string  `json:"Description"`
 	Request     Request `json:"Request"`
+	ParentName  string
 }
 
+// Request represents the users outgoing request and is populated by the API user
 type Request struct {
 	RequestBody string `json:"RequestBody"`
 	RequestURL  string `json:"RequestURL"`
 	RequestVerb string `json:"RequestVerb"`
 }
 
-// exists checks to see if an interface of type api or apiEndpoint exist
+// Exists checks to see if an interface of type api or apiEndpoint exist
 func (apis *APIs) Exists(thing interface{}) bool {
-
 	switch thing.(type) {
 	case API:
 		a := thing.(API)
@@ -87,10 +86,10 @@ func (aep *APIEndpoint) Execute() (*http.Response, error) {
 	// Build request
 	r := aep.Request
 	req, err := http.NewRequest(r.RequestVerb, r.RequestURL, strings.NewReader(r.RequestBody)) // strings.NewReader(r.RequestBody))
-	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
 
 	// Do request
 	client := &http.Client{}
@@ -98,6 +97,5 @@ func (aep *APIEndpoint) Execute() (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return resp, nil
 }

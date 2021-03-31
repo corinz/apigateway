@@ -20,8 +20,10 @@ func UnmarshalAPI(r *http.Request) (API, error) {
 		log.Printf(err.Error())
 		return a, err
 	}
-	json.Unmarshal(body, &a)
-
+	if err := json.Unmarshal(body, &a); err != nil {
+		log.Printf(err.Error())
+		return a, err
+	}
 	if a.Name == "" {
 		err := errors.New("ERROR: unmarshalAPI: Required parm missing")
 		log.Printf(err.Error())
@@ -33,19 +35,20 @@ func UnmarshalAPI(r *http.Request) (API, error) {
 // unmarshalAPIEndpoint accepts http request and returns unmarshalled apiEndpoint struct
 func UnmarshalAPIEndpoint(r *http.Request) (APIEndpoint, error) {
 	body, _ := ioutil.ReadAll(r.Body)
-	var apiEP APIEndpoint
+	var aep APIEndpoint
 	if json.Valid(body) == false {
 		err := errors.New("ERROR: unmarshalAPIEndpoint: JSON Invalid")
 		log.Printf(err.Error())
-		return apiEP, err
+		return aep, err
 	}
-	json.Unmarshal(body, &apiEP)
-
-	if apiEP.Name == "" {
+	if err := json.Unmarshal(body, &aep); err != nil {
+		log.Printf(err.Error())
+		return aep, err
+	}
+	if aep.Name == "" {
 		err := errors.New("ERROR: unmarshalAPIEndpoint: Required parm missing")
 		log.Printf(err.Error())
-		return apiEP, err
+		return aep, err
 	}
-
-	return apiEP, nil
+	return aep, nil
 }
