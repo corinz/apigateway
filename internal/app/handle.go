@@ -2,7 +2,7 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -55,8 +55,6 @@ func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiPtr.AppendEndpoint(apiEP)
-	a.newHandleFunc(apiPtr, apiEP.Name)
-
 	json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name))
 }
 
@@ -79,19 +77,18 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 	apiPtr := a.apis.GetAPI(api.Name)
 
 	// Create root endpoint and append to new api
-	root := agw.APIEndpoint{
+	defaultRequest := agw.Request{
+		RequestBody: "",
+		RequestURL:  "https://httpbin.org/get",
+		RequestVerb: "GET",
+	}
+	defaultEndpoint := agw.APIEndpoint{
 		Name:        "default",
 		Description: "default endpoint",
-		HTTPVerb:    "GET",
-		UID:         0,
-		Command:     "whoami",
 		ParentName:  apiPtr.Name,
+		Request:     defaultRequest,
 	}
-	apiPtr.AppendEndpoint(root)
-
-	// Add router & handle
-	a.addSubRouter(apiPtr)
-	a.newHandleFunc(apiPtr, "")
+	apiPtr.AppendEndpoint(defaultEndpoint)
 
 	json.NewEncoder(w).Encode(apiPtr)
 }
@@ -102,10 +99,22 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	endpoint := vars["endpoint"]
 
-	err := a.apis.GetAPI(apiName).GetAPIEndpoint(endpoint).Execute()
+	// Execute endpoint
+	resp, err := a.apis.GetAPI(apiName).GetAPIEndpoint(endpoint).Execute()
+	defer resp.Body.Close()
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
-		return
+	}
+
+	if resp.StatusCode == http.StatusOK { // Write response body
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+		}
+		bodyString := string(bodyBytes)
+		json.NewEncoder(w).Encode(bodyString)
+	} else {
+		errHandler(&w, resp.StatusCode, "ERROR: executeAPIEndpoint:"+resp.Status)
 	}
 }
 
@@ -140,9 +149,4 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
-}
-
-// generic is a placeholder method
-func generic(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("This is the generic method executing...")
 }

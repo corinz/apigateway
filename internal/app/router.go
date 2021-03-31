@@ -1,17 +1,5 @@
 package app
 
-import agw "github.com/corinz/apigateway/pkg/apigateway"
-
-// TODO error check empty or existing name
-func (a *app) addSubRouter(api *agw.API) {
-	api.Router = a.router.PathPrefix("/" + api.Name).Subrouter() // "/{apiName}/"
-}
-
-// TODO error check empty or existing name
-func (a *app) newHandleFunc(api *agw.API, subPath string) {
-	api.Router.HandleFunc("/"+subPath, generic) // "/{apiName}/{aepName}/"
-}
-
 func (a *app) setupRoutes() {
 	// GETs
 	a.router.HandleFunc("/", a.listAPIs).Methods("GET")

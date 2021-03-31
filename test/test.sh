@@ -19,8 +19,11 @@ curl \
   --data '{
       "Name": "testEP",
       "Description": "My EP",
-      "HTTPVerb": "POST",
-      "Command": "sleep 30"
+      "Request": {
+        "RequestVerb":"GET",
+        "RequestBody":"",
+        "RequestURL":"https://httpbin.org/get"
+        }
       }' \
   http://localhost:8080/myservice 
 

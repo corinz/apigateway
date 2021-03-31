@@ -2,8 +2,7 @@ package apigateway
 
 import (
 	"github.com/gorilla/mux"
-	"log"
-	"os/exec"
+	"net/http"
 	"strings"
 )
 
@@ -22,10 +21,14 @@ type API struct {
 type APIEndpoint struct {
 	Name        string `json:"Name"`
 	Description string `json:"Description"`
-	HTTPVerb    string `json:"HTTPVerb"`
-	Command     string `json:"Command"`
-	UID         int
 	ParentName  string
+	Request     Request `json:"Request"`
+}
+
+type Request struct {
+	RequestBody string `json:"RequestBody"`
+	RequestURL  string `json:"RequestURL"`
+	RequestVerb string `json:"RequestVerb"`
 }
 
 // exists checks to see if an interface of type api or apiEndpoint exist
@@ -77,16 +80,24 @@ func (api *API) GetAPIEndpoint(apiEPName string) *APIEndpoint {
 	return nil
 }
 
-// execute executes the command found in the apiEndpoint.Command struct-field
-func (aep *APIEndpoint) Execute() error {
-	s := strings.Split(aep.Command, " ")
-
-	cmd := exec.Command(s[0], s[1:]...)
-	log.Printf("Running command: %v", cmd.Args)
-	err := cmd.Run()
+// Execute builds the request and executes it
+// Note: response body is not closed in this method
+//   close response body in caller method with resp.Body.Close()
+func (aep *APIEndpoint) Execute() (*http.Response, error) {
+	// Build request
+	r := aep.Request
+	req, err := http.NewRequest(r.RequestVerb, r.RequestURL, strings.NewReader(r.RequestBody)) // strings.NewReader(r.RequestBody))
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	log.Printf("Execution complete")
-	return nil
+
+	// Do request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

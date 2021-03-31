@@ -53,7 +53,7 @@ func TestAPIEndpoint(t *testing.T) {
 	}
 
 	// API Endpoint create
-	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","Command": "sleep 5"}`)
+	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","JSONPayload": "sleep 5"}`)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	if err != nil {
 		t.Error(err)
@@ -73,7 +73,7 @@ func TestBadCreate(t *testing.T) {
 		t.Error(err)
 	}
 
-	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","Command": "sleep 5"}`)
+	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","JSONPayload": "sleep 5"}`)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	if err == nil {
