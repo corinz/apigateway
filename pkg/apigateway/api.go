@@ -86,6 +86,8 @@ func (aep *APIEndpoint) Execute() (*http.Response, error) {
 	// Build request
 	r := aep.Request
 	req, err := http.NewRequest(r.RequestVerb, r.RequestURL, strings.NewReader(r.RequestBody)) // strings.NewReader(r.RequestBody))
+	// TODO for debug mode, or otherwise, log the request parameters
+
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +95,7 @@ func (aep *APIEndpoint) Execute() (*http.Response, error) {
 
 	// Do request
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // TODO write in-line unit test to validate input parms vs request parms before client.Do(req)
 	if err != nil {
 		return nil, err
 	}

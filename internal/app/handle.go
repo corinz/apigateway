@@ -79,30 +79,53 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(apiPtr)
 }
 
+// executeAPI will execute every endpoint in the endpoint slice
+func (a *app) executeAPI(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	api := vars["api"]
+
+	apiPtr := a.apis.GetAPI(api)
+	for _, ep := range apiPtr.APIEPs {
+		// Execute endpoint
+		resp, err := ep.Execute()
+		if err != nil {
+			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+			return
+		}
+		writeResp(&w, resp)
+		resp.Body.Close() // Response body not closed by Execute()
+	}
+}
+
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
 func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	apiName := vars["api"]
-	endpoint := vars["endpoint"]
+	api := vars["api"]
+	ep := vars["endpoint"]
 
 	// Execute endpoint
-	resp, err := a.apis.GetAPI(apiName).GetAPIEndpoint(endpoint).Execute()
+	resp, err := a.apis.GetAPI(api).GetAPIEndpoint(ep).Execute()
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
 		return
 	}
 	defer resp.Body.Close() // Response body not closed by Execute()
 
-	if resp.StatusCode == http.StatusOK { // if OK, get & write resp
+	writeResp(&w, resp)
+}
+
+// writeResp sends response body to response writer
+func writeResp(w *http.ResponseWriter, resp *http.Response) {
+	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+			errHandler(w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
 			return
 		}
 		bodyString := string(bodyBytes)
-		json.NewEncoder(w).Encode(bodyString)
+		json.NewEncoder(*w).Encode(bodyString)
 	} else {
-		errHandler(&w, resp.StatusCode, "ERROR: executeAPIEndpoint:"+resp.Status)
+		errHandler(w, resp.StatusCode, "ERROR: executeAPIEndpoint:"+resp.Status)
 		return
 	}
 }

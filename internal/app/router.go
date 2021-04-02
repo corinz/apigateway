@@ -9,5 +9,9 @@ func (a *app) setupRoutes() {
 	// POSTs
 	a.router.HandleFunc("/", a.record(a.createAPI)).Methods("POST")
 	a.router.HandleFunc("/{api}", a.record(a.createAPIEndpoint)).Methods("POST")
-	a.router.HandleFunc("/{api}/{endpoint}", a.executeAPIEndpoint).Methods("POST")
+
+	// CONNECTs
+	a.router.HandleFunc("/{api}", a.executeAPI).Methods("CONNECT")
+	a.router.HandleFunc("/{api}/{endpoint}", a.executeAPIEndpoint).Methods("CONNECT")
+
 }

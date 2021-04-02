@@ -18,14 +18,29 @@ curl \
   --request POST \
   --data '{
       "Name": "testEP",
-      "Description": "My EP",
+      "Description": "GET Request",
       "Request": {
         "RequestVerb":"GET",
         "RequestBody":"",
         "RequestURL":"https://httpbin.org/get"
         }
       }' \
-  http://localhost:8080/myservice 
+  http://localhost:8080/myservice
+
+  # Create second endpoint
+curl \
+  --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+      "Name": "testEP2",
+      "Description": "POST Request",
+      "Request": {
+        "RequestVerb":"POST",
+        "RequestBody":"",
+        "RequestURL":"https://httpbin.org/post"
+        }
+      }' \
+  http://localhost:8080/myservice
 
 # Get Endpoint
 curl \
@@ -34,6 +49,11 @@ curl \
 
 # Execute endpoint
 curl \
-  --request POST \
+  --request CONNECT \
   http://localhost:8080/myservice/testEP
+
+# Execute all endpoints in API
+curl \
+  --request CONNECT \
+  http://localhost:8080/myservice
 
