@@ -45,7 +45,7 @@ func UnmarshalAPIEndpoint(r *http.Request) (APIEndpoint, error) {
 		log.Printf(err.Error())
 		return aep, err
 	}
-	if aep.Name == "" {
+	if aep.Name == "" || aep.Request.RequestURL == "" || aep.Request.RequestVerb == "" {
 		err := errors.New("ERROR: unmarshalAPIEndpoint: Required parm missing")
 		log.Printf(err.Error())
 		return aep, err
