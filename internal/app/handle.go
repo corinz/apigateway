@@ -159,3 +159,30 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
 }
+
+// delete gets the index of the named API/Endpoint and deletes it
+// TODO this method needs work
+func (a *app) delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	apiName := vars["api"]
+	ep := vars["endpoint"]
+
+	apiPtr, i := a.apis.GetAPIIndex(apiName)
+	if apiPtr == nil {
+		errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API object does not exist")
+		return
+	}
+
+	if ep == "" { // delete API
+		a.apis.APIArr = append(a.apis.APIArr[:i], a.apis.APIArr[i+1:]...) // delete i
+	} else { // delete API Endpoint
+		apiEPPtr, i := apiPtr.GetAPIEndpointIndex(ep)
+		if apiEPPtr == nil {
+			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist")
+			return
+		}
+		apiPtr.APIEPs = append(apiPtr.APIEPs[:1], apiPtr.APIEPs[i+1:]...) // delete i
+		// what is elipses??????
+	}
+	errHandler(&w, http.StatusNotFound, "ERROR: deleteAPI: Unable to delete API")
+}
