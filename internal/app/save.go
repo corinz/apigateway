@@ -8,12 +8,17 @@ import (
 
 // Marshal converts APIs struct to json and saves locally
 func (a *app) MarshalSave() error {
-	jsonByte, err := json.Marshal(a.apis)
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
+	var err error
+	raw, err := json.Marshal(a.apis)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	if err = ioutil.WriteFile("apigateway.json", jsonByte, 0644); err != nil {
+
+	if err = ioutil.WriteFile("apigateway.json", raw, 0600); err != nil {
 		log.Println(err)
 		return err
 	}

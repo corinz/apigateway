@@ -4,11 +4,15 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 )
+
+// TODO use a map for main struct, eliminate linear search funcs
 
 // APIs represents a slice of type: API
 type APIs struct {
 	APIArr []API
+	sync.RWMutex
 }
 
 // API represents a slice of type: APIEndpoint
@@ -56,7 +60,7 @@ func (apis *APIs) AddAPI(a API) {
 }
 
 // getAPI accepts name argument and returns pointer to api
-func (apis *APIs) GetAPI(name string) *API {
+func (apis *APIs) GetAPI(name string) (*API) {
 	for i, api := range apis.APIArr {
 		if api.Name == name {
 			return &apis.APIArr[i]
@@ -65,19 +69,39 @@ func (apis *APIs) GetAPI(name string) *API {
 	return nil
 }
 
+// getAPI accepts name argument and returns pointer to api and index
+func (apis *APIs) GetAPIIndex(name string) (*API, int) {
+	for i, api := range apis.APIArr {
+		if api.Name == name {
+			return &apis.APIArr[i], i
+		}
+	}
+	return nil, -1
+}
+
 // appendEndpoint appends an endpoint to the apiEPs slice
 func (api *API) AppendEndpoint(aep APIEndpoint) {
 	api.APIEPs = append(api.APIEPs, aep)
 }
 
 // getAPIEndpoint returns a pointer to the endpoint struct or nil if not found
-func (api *API) GetAPIEndpoint(apiEPName string) *APIEndpoint {
+func (api *API) GetAPIEndpoint(apiEPName string) (*APIEndpoint) {
 	for _, apiEP := range api.APIEPs {
 		if apiEP.Name == apiEPName {
 			return &apiEP
 		}
 	}
 	return nil
+}
+
+// getAPIEndpoint returns a pointer to the endpoint struct or nil if not found
+func (api *API) GetAPIEndpointIndex(apiEPName string) (*APIEndpoint, int) {
+	for i, apiEP := range api.APIEPs {
+		if apiEP.Name == apiEPName {
+			return &apiEP, i
+		}
+	}
+	return nil, -1
 }
 
 // Execute builds the request and executes it

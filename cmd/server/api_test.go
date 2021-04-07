@@ -32,8 +32,6 @@ func TestAPICreate(t *testing.T) {
 	defer app.Shutdown()
 
 	var json = []byte(`{"Name":"testAPI"}`)
-
-	// test for true negative error
 	err := makeJSONReq(json, "/", "testAPI", true)
 	if err != nil {
 		t.Error(err)
@@ -53,7 +51,7 @@ func TestAPIEndpoint(t *testing.T) {
 	}
 
 	// API Endpoint create
-	json = []byte(`{"Name": "testEP","Description": "My EP","HTTPVerb": "POST","JSONPayload": "sleep 5"}`)
+	json = []byte(`{"Name":"testEP","Description":"GET Request","Request":{"RequestVerb":"GET","RequestBody":"","RequestURL":"https://httpbin.org/get"}}`)
 	err = makeJSONReq(json, "/testAPI", "testEP", false)
 	if err != nil {
 		t.Error(err)
@@ -138,11 +136,11 @@ func makeJSONReq(jsonStr []byte, endpoint string, nameTest string, mode bool) er
 			return errors.New("server returned invalid struct" + a.Name + " != " + nameTest)
 		}
 	} else { // apiEndpoint struct
-		a, err := readJSONAPI(resp) // TODO readJSONAPIEndpoint() does not unmarshal struct correctly
+		a, err := readJSONAPIEndpoint(resp)
 		if err != nil {
 			return err
 		}
-		if a.APIEPs[1].Name != nameTest { // TODO bandaid fix
+		if a.Name != nameTest {
 			return errors.New("server returned invalid struct " + a.Name + " != " + nameTest)
 		}
 	}
@@ -150,7 +148,7 @@ func makeJSONReq(jsonStr []byte, endpoint string, nameTest string, mode bool) er
 	return nil
 }
 
-// readJSONAPI unmarshals byte slice to api struct and tests the 'Name' field
+// readJSONAPI unmarshals byte slice to api struct
 func readJSONAPI(resp *http.Response) (agw.API, error) {
 	var a agw.API
 
@@ -163,8 +161,7 @@ func readJSONAPI(resp *http.Response) (agw.API, error) {
 	return a, nil
 }
 
-// TODO the main app will return a slice (APIEPs) and needs to be treated as such
-// readJSONAPIEndpoint unmarshals byte slice to apiEndpoint struct and tests the 'Name' field
+// readJSONAPIEndpoint unmarshals byte slice to apiEndpoint struct
 func readJSONAPIEndpoint(resp *http.Response) (agw.APIEndpoint, error) {
 	var a agw.APIEndpoint
 
@@ -176,3 +173,5 @@ func readJSONAPIEndpoint(resp *http.Response) (agw.APIEndpoint, error) {
 	json.Unmarshal(body, &a)
 	return a, nil
 }
+
+// TODO go routine with a write lock and another go. create a wait group to ensure both go routines complete before finishing test

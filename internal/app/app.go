@@ -2,13 +2,12 @@ package app
 
 import (
 	"context"
+	agw "github.com/corinz/apigateway/pkg/apigateway"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-
-	agw "github.com/corinz/apigateway/pkg/apigateway"
-	"github.com/gorilla/mux"
 )
 
 type app struct {

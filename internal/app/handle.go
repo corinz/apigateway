@@ -30,6 +30,9 @@ func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(htt
 // createAPIEndpoint creates an an apiEndpoint from POST data and appends to the api named in the path
 // ../{api}/{endpoint}
 func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+	a.apis.Lock()
+	defer a.apis.Unlock()
+
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 
@@ -59,6 +62,9 @@ func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 // createAPI
 // ../{api}
 func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
+	a.apis.Lock()
+	defer a.apis.Unlock()
+
 	api, err := agw.UnmarshalAPI(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -81,6 +87,9 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 
 // executeAPI will execute every endpoint in the endpoint slice
 func (a *app) executeAPI(w http.ResponseWriter, r *http.Request) {
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
 	vars := mux.Vars(r)
 	api := vars["api"]
 
@@ -99,6 +108,9 @@ func (a *app) executeAPI(w http.ResponseWriter, r *http.Request) {
 
 // executeAPIEndpoint locates the apiEndpoint struct and calls execute()
 func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
 	vars := mux.Vars(r)
 	api := vars["api"]
 	ep := vars["endpoint"]
@@ -133,6 +145,9 @@ func writeResp(w *http.ResponseWriter, resp *http.Response) {
 // listAPIs writes json encoded apis struct to the response writer
 // ../
 func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
 	if err := json.NewEncoder(w).Encode(a.apis.APIArr); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIs: "+err.Error())
 	}
@@ -141,6 +156,9 @@ func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
 // listAPI writes json encoded api struct to the response writer
 // ../{api}
 func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	if err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName)); err != nil {
@@ -151,6 +169,9 @@ func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
 // listAPIEndpoints writes json encoded apiEndpoint struct to the response writer
 // ../{api}/{endpoint}
 func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
+	a.apis.RLock()
+	defer a.apis.RUnlock()
+
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
@@ -158,4 +179,36 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(ep); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
+}
+
+// delete gets the index of the named API/Endpoint and deletes it
+func (a *app) delete(w http.ResponseWriter, r *http.Request) {
+	a.apis.Lock()
+	defer a.apis.Unlock()
+
+	vars := mux.Vars(r)
+	apiName := vars["api"]
+	ep := vars["endpoint"]
+
+	apiPtr, i := a.apis.GetAPIIndex(apiName)
+	if apiPtr == nil {
+		errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API object does not exist")
+		return
+	}
+
+	if ep == "" { // delete API
+		log.Printf("Deleted API: '../%v'\n", apiPtr.Name)
+		a.apis.APIArr = append(a.apis.APIArr[:i], a.apis.APIArr[i+1:]...) // delete i
+		return
+	} else { // delete API Endpoint
+		apiEPPtr, i := apiPtr.GetAPIEndpointIndex(ep)
+		if apiEPPtr == nil {
+			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist")
+			return
+		}
+		log.Printf("Deleted API Endpoint: '../%v/%v'\n", apiPtr.Name, apiEPPtr.Name)
+		apiPtr.APIEPs = append(apiPtr.APIEPs[:1], apiPtr.APIEPs[i+1:]...) // delete i
+		return
+	}
+	errHandler(&w, http.StatusNotFound, "ERROR: deleteAPI: Unable to delete API")
 }
