@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"github.com/gorilla/mux"
 )
 
 // unmarshalAPI accepts http request and returns unmarshalled api struct

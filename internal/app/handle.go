@@ -20,7 +20,7 @@ func errHandler(w *http.ResponseWriter, errCode int, errStr string) {
 func (a *app) record(endpoint func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		endpoint(w, r)
-		if err := a.MarshalSave(); err != nil {
+		if err := a.marshalSave(); err != nil {
 			errHandler(&w, http.StatusInternalServerError, "ERROR: createAPIEndpoint: Unable to marshal and save app data")
 			// TODO revert changes if unable to save
 		}

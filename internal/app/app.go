@@ -24,6 +24,11 @@ func NewApp() *app {
 }
 
 func (a *app) Startup(addr string) {
+	if _, err := os.Stat("cmd/server/apigateway.json"); err == nil { // save file exists
+		if err := a.load(); err != nil {
+			log.Println(err.Error())
+		}
+	}
 	a.setupRoutes()
 	a.server.Addr = addr
 	log.Fatal(a.server.ListenAndServe())

@@ -35,7 +35,6 @@ type Request struct {
 	RequestURL  string `json:"RequestURL"`
 	RequestVerb string `json:"RequestVerb"`
 }
-
 // Exists checks to see if an interface of type api or apiEndpoint exist
 func (apis *APIs) Exists(thing interface{}) bool {
 	switch thing.(type) {
@@ -60,7 +59,7 @@ func (apis *APIs) AddAPI(a API) {
 }
 
 // getAPI accepts name argument and returns pointer to api
-func (apis *APIs) GetAPI(name string) (*API) {
+func (apis *APIs) GetAPI(name string) *API {
 	for i, api := range apis.APIArr {
 		if api.Name == name {
 			return &apis.APIArr[i]
@@ -85,7 +84,7 @@ func (api *API) AppendEndpoint(aep APIEndpoint) {
 }
 
 // getAPIEndpoint returns a pointer to the endpoint struct or nil if not found
-func (api *API) GetAPIEndpoint(apiEPName string) (*APIEndpoint) {
+func (api *API) GetAPIEndpoint(apiEPName string) *APIEndpoint {
 	for _, apiEP := range api.APIEPs {
 		if apiEP.Name == apiEPName {
 			return &apiEP
