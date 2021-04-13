@@ -202,8 +202,8 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	} else { // delete API Endpoint
 		apiEPPtr, i := apiPtr.GetAPIEndpointIndex(ep)
-		if apiEPPtr == nil {
-			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist")
+		if apiEPPtr == nil || i == 0{
+			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist or is not available for deletion")
 			return
 		}
 		log.Printf("Deleted API Endpoint: '../%v/%v'\n", apiPtr.Name, apiEPPtr.Name)

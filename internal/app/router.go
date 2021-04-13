@@ -15,6 +15,6 @@ func (a *app) setupRoutes() {
 	a.router.HandleFunc("/{api}/{endpoint}", a.executeAPIEndpoint).Methods("CONNECT")
 
 	// DELETEs
-	a.router.HandleFunc("/{api}", a.delete).Methods("DELETE")
-	a.router.HandleFunc("/{api}/{endpoint}", a.delete).Methods("DELETE")
+	a.router.HandleFunc("/{api}", a.record(a.delete)).Methods("DELETE")
+	a.router.HandleFunc("/{api}/{endpoint}", a.record(a.delete)).Methods("DELETE")
 }
