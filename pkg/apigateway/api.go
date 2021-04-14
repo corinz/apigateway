@@ -35,6 +35,7 @@ type Request struct {
 	RequestURL  string `json:"RequestURL"`
 	RequestVerb string `json:"RequestVerb"`
 }
+
 // Exists checks to see if an interface of type api or apiEndpoint exist
 func (apis *APIs) Exists(thing interface{}) bool {
 	switch thing.(type) {

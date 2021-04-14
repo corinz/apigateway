@@ -30,7 +30,7 @@ func (a *app) Startup() {
 		}
 	}
 	a.setupRoutes()
-	log.Fatal(a.server.ListenAndServeTLS(".cert/localhost.crt",".cert/localhost.key"))
+	log.Fatal(a.server.ListenAndServeTLS(".cert/localhost.crt", ".cert/localhost.key"))
 }
 
 //TODO review this
