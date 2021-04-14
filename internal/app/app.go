@@ -23,15 +23,14 @@ func NewApp() *app {
 	return &app{router: r, server: s, apis: a}
 }
 
-func (a *app) Startup(addr string) {
+func (a *app) Startup() {
 	if _, err := os.Stat("cmd/server/apigateway.json"); err == nil { // save file exists
 		if err := a.load(); err != nil {
 			log.Println(err.Error())
 		}
 	}
 	a.setupRoutes()
-	a.server.Addr = addr
-	log.Fatal(a.server.ListenAndServe())
+	log.Fatal(a.server.ListenAndServeTLS(".cert/localhost.crt",".cert/localhost.key"))
 }
 
 //TODO review this

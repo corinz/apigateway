@@ -5,12 +5,12 @@ curl \
   --header "Content-Type: application/json" \
   --request POST \
   --data '{"name":"myservice"}' \
-  http://localhost:8080 
+  https://localhost/api --insecure
 
 # Get list of all APIs
 curl \
   --request GET \
-  http://localhost:8080 
+  https://localhost/api --insecure
 
 # Create endpoint
 curl \
@@ -25,7 +25,7 @@ curl \
         "RequestURL":"https://httpbin.org/get"
         }
       }' \
-  http://localhost:8080/myservice
+  https://localhost/api/myservice --insecure
 
   # Create second endpoint
 curl \
@@ -40,20 +40,20 @@ curl \
         "RequestURL":"https://httpbin.org/post"
         }
       }' \
-  http://localhost:8080/myservice
+  https://localhost/api/myservice --insecure
 
 # Get Endpoint
 curl \
   --request GET \
-  http://localhost:8080/myservice/testEP
+  https://localhost/api/myservice/testEP --insecure
 
 # Execute endpoint
 curl \
-  --request CONNECT \
-  http://localhost:8080/myservice/testEP
+  --request GET \
+  https://localhost/myservice/testEP --insecure
 
 # Execute all endpoints in API
 curl \
-  --request CONNECT \
-  http://localhost:8080/myservice
+  --request GET \
+  https://localhost/myservice --insecure
 
