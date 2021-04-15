@@ -1,32 +1,60 @@
-image: golang:1.15
+include:
+  - project: 'platform-one/devops/pipeline-templates'
+    ref: master
+    file: '/templates/go.yml'
+
 
 variables:
-  REPO_NAME: code.il2.dso.mil/trash-pandas/go-api-gateway
+  TEAM: $CI_PROJECT_NAMESPACE
+  APP: $CI_PROJECT_NAME
 
-# simlink repo from $GOPATH/src
-before_script:
-  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
-  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
-  - cd $GOPATH/src/$REPO_NAME
+  FORTIFY_PROJECT_VERSION: "10"
+  FORTIFY_INCLUDE: "."
+  FORTIFY_EXCLUDE: ""
 
-stages:
-  - test
-  - build
-  - deploy
+  SONAR_COVERAGE_EXCLUSIONS: "**/*_test.go"
 
-format:
-  tags:
-    - fXkuoigr
-  stage: test
-  script:
-    - go fmt ./...
-    - go vet ./...
-    #- go test -race $(go list ./... | grep -v /vendor/)
+  TRUFFLEHOG_EXCLUDE_PATHS: "go.sum"
 
-compile:
-  stage: build
-  script:
-    - go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/apigateway
-  artifacts:
-    paths:
-      - apigateway
+  ZAP_URL: "https://go-world-il2-staging.apps.dso.mil/"
+  ZAP_SCAN: zap-baseline.py
+
+dependency check:
+  allow_failure: true
+
+lint:
+  allow_failure: true
+
+unit tests:
+  allow_failure: true
+
+fortify:
+  allow_failure: true
+
+sonarqube:
+  allow_failure: true
+
+e2e tests:
+  allow_failure: true
+
+pen test:
+  allow_failure: true
+
+twistlock scan:
+  allow_failure: true
+
+# build image:
+#   image: ${DOCKER_REGISTRY}/pipeline-job/rootless-podman:0.1
+#   script:
+#     - echo $HOME
+#     - export BUILDAH_FORMAT=docker
+#     - export STORAGE_DRIVER=vfs
+#     - pwd
+#     - whoami
+#     - echo "Building $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+#     - mkdir $HOME/.docker
+#     - touch $HOME/.docker/config.json
+#     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /home/rootless-podman/.docker/config.json
+#     - buildah bud -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -f ./Dockerfile .
+#     - buildah push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+#     - echo "Successfully pushed image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
