@@ -1,0 +1,62 @@
+include:
+  - project: 'platform-one/devops/pipeline-templates'
+    ref: master
+    file: '/templates/go.yml'
+
+workflow:
+  rules:
+
+variables:
+  TEAM: $CI_PROJECT_NAMESPACE
+  APP: $CI_PROJECT_NAME
+
+  FORTIFY_PROJECT_VERSION: "10"
+  FORTIFY_INCLUDE: "."
+  FORTIFY_EXCLUDE: ""
+
+  SONAR_COVERAGE_EXCLUSIONS: "**/*_test.go"
+
+  TRUFFLEHOG_EXCLUDE_PATHS: "go.sum"
+
+  ZAP_URL: "https://go-world-il2-staging.apps.dso.mil/"
+  ZAP_SCAN: zap-baseline.py
+
+dependency check:
+  allow_failure: true
+
+lint:
+  allow_failure: true
+
+unit tests:
+  allow_failure: true
+
+fortify:
+  allow_failure: true
+
+sonarqube:
+  allow_failure: true
+
+e2e tests:
+  allow_failure: true
+
+pen test:
+  allow_failure: true
+
+twistlock scan:
+  allow_failure: true
+
+# build image:
+#   image: ${DOCKER_REGISTRY}/pipeline-job/rootless-podman:0.1
+#   script:
+#     - echo $HOME
+#     - export BUILDAH_FORMAT=docker
+#     - export STORAGE_DRIVER=vfs
+#     - pwd
+#     - whoami
+#     - echo "Building $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+#     - mkdir $HOME/.docker
+#     - touch $HOME/.docker/config.json
+#     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /home/rootless-podman/.docker/config.json
+#     - buildah bud -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -f ./Dockerfile .
+#     - buildah push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+#     - echo "Successfully pushed image $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
