@@ -3,6 +3,8 @@ include:
     ref: master
     file: '/templates/go.yml'
 
+workflow:
+  rules:
 
 variables:
   TEAM: $CI_PROJECT_NAMESPACE
