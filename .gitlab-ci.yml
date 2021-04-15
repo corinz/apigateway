@@ -30,7 +30,3 @@ compile:
   artifacts:
     paths:
       - apigateway
-
-deploy:
-  stage: deploy
-  image: alpine
