@@ -18,7 +18,7 @@ var URL string = "http://localhost:8080"
 
 func TestWebServerRunning(t *testing.T) {
 	app := app.NewApp()
-	go app.Startup(":8080")
+	go app.Startup()
 	defer app.Shutdown()
 	_, err := http.Get("http://localhost:8080")
 	if err != nil {
@@ -28,7 +28,7 @@ func TestWebServerRunning(t *testing.T) {
 
 func TestAPICreate(t *testing.T) {
 	app := app.NewApp()
-	go app.Startup(":8080")
+	go app.Startup()
 	defer app.Shutdown()
 
 	var json = []byte(`{"Name":"testAPI"}`)
@@ -40,7 +40,7 @@ func TestAPICreate(t *testing.T) {
 
 func TestAPIEndpoint(t *testing.T) {
 	app := app.NewApp()
-	go app.Startup(":8080")
+	go app.Startup()
 	defer app.Shutdown()
 
 	// API Create
@@ -60,7 +60,7 @@ func TestAPIEndpoint(t *testing.T) {
 
 func TestBadCreate(t *testing.T) {
 	app := app.NewApp()
-	go app.Startup(":8080")
+	go app.Startup()
 	defer app.Shutdown()
 
 	// Existing API
