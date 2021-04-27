@@ -1,7 +1,10 @@
-all: clean build docker
+all: clean build docker swagger
 clean:
 	go clean
+	go mod tidy
 	go fmt ./...
+
+cert-renew:
 	rm -f .cert/localhost*
 	openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout .cert/localhost.key -out .cert/localhost.crt -days 365 -subj '/CN=localhost'
 
@@ -21,3 +24,15 @@ docker:
 	&& echo $$REG \
 	&& docker build -t $$REG . \
 	&& docker push $$REG
+
+swagger-check:
+	which swagger || (go get -u github.com/go-swagger/go-swagger/cmd/swagger)
+
+swagger-gen:
+	swagger generate spec -o ./swagger.json --scan-models
+
+swagger: swagger-check swagger-gen
+	swagger validate swagger.json && mv swagger.json docs/swagger-ui/dist/swagger.json
+
+swagger-serve: swagger-check swagger-gen
+	swagger validate swagger.json && swagger serve -F=swagger swagger.json

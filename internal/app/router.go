@@ -1,6 +1,16 @@
 package app
 
+import (
+	"net/http"
+)
+
 func (a *app) setupRoutes() {
+	// swagger docs
+	docs := http.StripPrefix("/docs/", http.FileServer(http.Dir("./docs/swagger-ui/dist")))
+	a.router.PathPrefix("/docs/").Handler(docs)
+	a.router.HandleFunc("/docs", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/docs/", 301)
+	})
 
 	// API Routes ../api/{api}/{endpoint}
 	// GETs

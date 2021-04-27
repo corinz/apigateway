@@ -1,0 +1,120 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "Documentation of API Gateway.",
+    "title": "API Gateway.",
+    "version": "1.0.0"
+  },
+  "host": "localhost",
+  "basePath": "/",
+  "paths": {
+    "/api": {
+      "post": {
+        "tags": [
+          "create"
+        ],
+        "summary": "Use this request to create an endpoint.",
+        "operationId": "createAPI",
+        "parameters": [
+          {
+            "description": "Start by giving your endpoint a name.",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/createAPIResponse"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/createAPIResponse"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "API": {
+      "description": "API represents a slice of type: APIEndpoint",
+      "type": "object",
+      "properties": {
+        "APIEPs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/APIEndpoint"
+          }
+        },
+        "Name": {
+          "type": "string"
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
+    },
+    "APIEndpoint": {
+      "description": "APIEndpoint represents a single API Endpoint and is populated by the API user",
+      "type": "object",
+      "properties": {
+        "Description": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "ParentName": {
+          "type": "string"
+        },
+        "Request": {
+          "$ref": "#/definitions/Request"
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
+    },
+    "Request": {
+      "description": "Request represents the users outgoing request and is populated by the API user",
+      "type": "object",
+      "properties": {
+        "RequestBody": {
+          "type": "string"
+        },
+        "RequestURL": {
+          "type": "string"
+        },
+        "RequestVerb": {
+          "type": "string"
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
+    },
+    "createAPIResponse": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string"
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/docs"
+    }
+  },
+  "responses": {
+    "createAPIResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/API"
+      }
+    }
+  },
+  "securityDefinitions": {
+    "basic": {
+      "type": "basic"
+    }
+  }
+}
