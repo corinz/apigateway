@@ -42,6 +42,22 @@ curl \
       }' \
   https://localhost/api/myservice --insecure
 
+# You can request an API and API Endpoints be created in a single request
+curl \
+  --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "Name": "myservice2",
+    "APIEPs":[{
+      "Description": "string",
+      "Name": "testEP",
+      "ParentName": "string",
+      "Request": {
+        "RequestBody": "string",
+        "RequestURL": "string",
+        "RequestVerb": "string"}}]}' \
+  https://localhost/api --insecure
+
 # Get Endpoint
 curl \
   --request GET \
@@ -56,4 +72,3 @@ curl \
 curl \
   --request GET \
   https://localhost/myservice --insecure
-
