@@ -94,11 +94,15 @@ func (a *app) executeAPI(w http.ResponseWriter, r *http.Request) {
 	api := vars["api"]
 
 	apiPtr := a.apis.GetAPI(api)
+	if apiPtr == nil {
+		errHandler(&w, http.StatusNotFound, "ERROR: executeAPI: API not found")
+		return
+	}
 	for _, ep := range apiPtr.APIEPs {
 		// Execute endpoint
 		resp, err := ep.Execute()
 		if err != nil {
-			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
+			errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPI:"+err.Error())
 			return
 		}
 		writeResp(&w, resp)
@@ -115,8 +119,14 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	api := vars["api"]
 	ep := vars["endpoint"]
 
+	// Get API
+	apiPtr := a.apis.GetAPI(api)
+	if apiPtr == nil {
+		errHandler(&w, http.StatusNotFound, "ERROR: executeAPIEndpoint: API Endpoint not found")
+		return
+	}
 	// Execute endpoint
-	resp, err := a.apis.GetAPI(api).GetAPIEndpoint(ep).Execute()
+	resp, err := apiPtr.GetAPIEndpoint(ep).Execute()
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
 		return
