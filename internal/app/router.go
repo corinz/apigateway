@@ -12,6 +12,11 @@ func (a *app) setupRoutes() {
 		http.Redirect(w, r, "/docs/", 301)
 	})
 
+	// reroute homepage to docs
+	a.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/docs/", 301)
+	})
+
 	// API Routes ../api/{api}/{endpoint}
 	// GETs
 	a.router.HandleFunc("/api", a.listAPIs).Methods("GET")
