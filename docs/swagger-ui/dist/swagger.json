@@ -18,15 +18,27 @@
   "basePath": "/",
   "paths": {
     "/api": {
+      "get": {
+        "tags": [
+          "list"
+        ],
+        "summary": "Use this request to list all APIs.",
+        "operationId": "listAPIs",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/listAPIs"
+          }
+        }
+      },
       "post": {
         "tags": [
           "create"
         ],
-        "summary": "Use this request to create an endpoint.",
+        "summary": "Use this request to create an API.",
         "operationId": "createAPI",
         "parameters": [
           {
-            "description": "Give your endpoint a name.",
+            "description": "Give your API a name.",
             "name": "Body",
             "in": "body",
             "schema": {
@@ -37,6 +49,190 @@
         "responses": {
           "200": {
             "$ref": "#/responses/createAPIResponse"
+          }
+        }
+      }
+    },
+    "/api/{APIName}": {
+      "get": {
+        "tags": [
+          "list"
+        ],
+        "summary": "Use this request to list an API.",
+        "operationId": "listAPI",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/listAPIResponse"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "create"
+        ],
+        "summary": "Use this request to create an API Endpoint using the /api generated API Name.",
+        "operationId": "createAPIEndpoint",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "description": "Give your API Endpoint a name.",
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/createAPIEndpointResponse"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/createAPIEndpointResponse"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "delete"
+        ],
+        "summary": "Use this request to delete an API and all of its endpoints.",
+        "operationId": "deleteAPI",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/deleteAPIResponse"
+          }
+        }
+      }
+    },
+    "/api/{APIName}/{APIEndpoint}": {
+      "get": {
+        "tags": [
+          "list"
+        ],
+        "summary": "Use this request to list an API Endpoint.",
+        "operationId": "listAPIEndpoint",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIEndpoint",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/listAPIEndpointResponse"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "delete"
+        ],
+        "summary": "Use this request to delete an Endpoint within an API.",
+        "operationId": "deleteAPIEndpoint",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIEndpoint",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/deleteAPIEndpointResponse"
+          }
+        }
+      }
+    },
+    "/{APIName}": {
+      "get": {
+        "tags": [
+          "execute"
+        ],
+        "summary": "Use this request to execute all Endpoints in an API.",
+        "operationId": "executeAPI",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/executeAPIResponse"
+          }
+        }
+      }
+    },
+    "/{APIName}/{APIEndpoint}": {
+      "get": {
+        "tags": [
+          "execute"
+        ],
+        "summary": "Use this request to execute an API Endpoint.",
+        "operationId": "executeAPIEndpoint",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIName",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "type: string",
+            "name": "APIEndpoint",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/executeAPIEndpointResponse"
           }
         }
       }
@@ -78,6 +274,19 @@
       },
       "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
     },
+    "APIs": {
+      "description": "APIs represents a slice of type: API",
+      "type": "object",
+      "properties": {
+        "APIArr": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/API"
+          }
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
+    },
     "Request": {
       "description": "Request represents the users outgoing request and is populated by the API user",
       "type": "object",
@@ -94,6 +303,32 @@
       },
       "x-go-package": "github.com/corinz/apigateway/pkg/apigateway"
     },
+    "createAPIEndpointResponse": {
+      "type": "object",
+      "properties": {
+        "Description": {
+          "type": "string"
+        },
+        "Name": {
+          "type": "string"
+        },
+        "Request": {
+          "type": "object",
+          "properties": {
+            "RequestBody": {
+              "type": "string"
+            },
+            "RequestURL": {
+              "type": "string"
+            },
+            "RequestVerb": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "x-go-package": "github.com/corinz/apigateway/docs"
+    },
     "createAPIResponse": {
       "type": "object",
       "properties": {
@@ -105,10 +340,58 @@
     }
   },
   "responses": {
+    "createAPIEndpointResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/APIEndpoint"
+      }
+    },
     "createAPIResponse": {
       "description": "Response Body",
       "schema": {
         "$ref": "#/definitions/API"
+      }
+    },
+    "deleteAPIEndpointResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/APIEndpoint"
+      }
+    },
+    "deleteAPIResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/API"
+      }
+    },
+    "executeAPIEndpointResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/APIEndpoint"
+      }
+    },
+    "executeAPIResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/API"
+      }
+    },
+    "listAPIEndpointResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/APIEndpoint"
+      }
+    },
+    "listAPIResponse": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/API"
+      }
+    },
+    "listAPIs": {
+      "description": "Response Body",
+      "schema": {
+        "$ref": "#/definitions/APIs"
       }
     }
   },

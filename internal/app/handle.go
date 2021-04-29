@@ -45,7 +45,7 @@ func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// init endpoint, error and return if endpoint is invalid or exists
-	apiEP, err := agw.UnmarshalAPIEndpoint(r)
+	apiEP, err := agw.UnmarshalAPIEndpoint(r) // TODO will this unmarshal unwanted parms like Parentname?
 	if err != nil {
 		errHandler(&w, http.StatusBadRequest, "ERROR: createAPIEndpoint: "+err.Error())
 		return
@@ -217,7 +217,7 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	} else { // delete API Endpoint
 		apiEPPtr, i := apiPtr.GetAPIEndpointIndex(ep)
-		if apiEPPtr == nil || i == 0 {
+		if apiEPPtr == nil || apiEPPtr.Name == "default" {
 			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist or is not available for deletion")
 			return
 		}
