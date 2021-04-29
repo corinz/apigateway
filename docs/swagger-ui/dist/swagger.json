@@ -26,7 +26,7 @@
         "operationId": "createAPI",
         "parameters": [
           {
-            "description": "Start by giving your endpoint a name.",
+            "description": "Give your endpoint a name.",
             "name": "Body",
             "in": "body",
             "schema": {

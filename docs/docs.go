@@ -25,10 +25,6 @@ package docs
 
 import agw "github.com/corinz/apigateway/pkg/apigateway"
 
-type createAPIResponse struct {
-	Name string `json:"Name"`
-}
-
 // swagger:route POST /api create createAPI
 // Use this request to create an endpoint.
 // responses:
@@ -41,9 +37,13 @@ type createAPIResponseWrapper struct {
 	Body agw.API
 }
 
+type createAPIResponse struct {
+	Name string `json:"Name"`
+}
+
 // swagger:parameters createAPI
 type foobarParamsWrapper struct {
-	// Start by giving your endpoint a na.
+	// Give your endpoint a name.
 	// in:body
-	Body agw.API
+	Body createAPIResponse
 }
