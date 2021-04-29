@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// TODO feature: auth decorator to authorize creation/deletion of endpoints/apis
 func errHandler(w *http.ResponseWriter, errCode int, errStr string) {
 	log.Printf(errStr)
 	http.Error(*w, errStr, errCode)
@@ -68,6 +69,10 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 	api, err := agw.UnmarshalAPI(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if api.APIEPs != nil { // api.Name only valid request parm in this method
+		errHandler(&w, http.StatusBadRequest, "ERROR: createAPI: 'Name' is the only valid field for /api request")
 		return
 	}
 	if a.apis.Exists(api) {
