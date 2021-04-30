@@ -20,7 +20,7 @@ variables:
 
   SONAR_COVERAGE_EXCLUSIONS: "**/*_test.go"
 
-  TRUFFLEHOG_EXCLUDE_PATHS: "go.sum"
+  TRUFFLEHOG_EXCLUDE_PATHS: "go.sum /docs/swagger-ui/dist"
 
   ZAP_URL: "https://go-world-il2-staging.apps.dso.mil/"
   ZAP_SCAN: zap-baseline.py
