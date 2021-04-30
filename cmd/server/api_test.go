@@ -12,8 +12,6 @@ import (
 	agw "github.com/corinz/apigateway/pkg/apigateway"
 )
 
-// TODO, use json as strings, eliminate need to unmarshal objects and test struct fields
-// TODO go testing only works with -run flag, go test . and go test api_test.go return different errors
 var URL string = "http://localhost:8080"
 
 func TestWebServerRunning(t *testing.T) {
@@ -173,5 +171,3 @@ func readJSONAPIEndpoint(resp *http.Response) (agw.APIEndpoint, error) {
 	json.Unmarshal(body, &a)
 	return a, nil
 }
-
-// TODO go routine with a write lock and another go. create a wait group to ensure both go routines complete before finishing test

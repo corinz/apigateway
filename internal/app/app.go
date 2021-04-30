@@ -19,15 +19,14 @@ type app struct {
 func NewApp() *app {
 	r := mux.NewRouter().StrictSlash(true)
 	s := &http.Server{Handler: r}
-	a := &agw.APIs{}
+	m := make(map[string]agw.API)
+	a := &agw.APIs{APIMap: m}
 	return &app{router: r, server: s, apis: a}
 }
 
 func (a *app) Startup() {
 	if _, err := os.Stat("cmd/server/apigateway.json"); err == nil { // save file exists
-		if err := a.load(); err != nil {
-			log.Println(err.Error())
-		}
+		a.load()
 	}
 	a.setupRoutes()
 	log.Fatal(a.server.ListenAndServeTLS(".cert/localhost.crt", ".cert/localhost.key"))

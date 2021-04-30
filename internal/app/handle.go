@@ -37,27 +37,26 @@ func (a *app) createAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 
-	// error and return if API does not exist
-	apiPtr := a.apis.GetAPI(apiName)
-	if apiPtr == nil {
-		errHandler(&w, http.StatusNotFound, "ERROR: createAPIEndpoint: Requested API object does not exist")
+	api, exists := a.apis.APIMap[apiName]
+	if !exists {
+		errHandler(&w, http.StatusNotFound, "ERROR: createAPIEndpoint: Requested API does not exist")
 		return
 	}
 
 	// init endpoint, error and return if endpoint is invalid or exists
-	apiEP, err := agw.UnmarshalAPIEndpoint(r) // TODO will this unmarshal unwanted parms like Parentname?
+	apiEP, err := agw.UnmarshalAPIEndpoint(r)
 	if err != nil {
 		errHandler(&w, http.StatusBadRequest, "ERROR: createAPIEndpoint: "+err.Error())
 		return
 	}
-	apiEP.ParentName = apiPtr.Name
-	if a.apis.Exists(apiEP) {
+	apiEP.ParentName = api.Name
+	if _, exists := a.apis.APIMap[api.Name].APIEPMap[apiEP.Name]; exists {
 		errHandler(&w, 409, "ERROR: createAPIEndpoint: Requested API Endpoint object exists")
 		return
 	}
 
-	apiPtr.AppendEndpoint(apiEP)
-	json.NewEncoder(w).Encode(apiPtr.GetAPIEndpoint(apiEP.Name))
+	a.apis.APIMap[api.Name].APIEPMap[apiEP.Name] = apiEP
+	json.NewEncoder(w).Encode(a.apis.APIMap[api.Name].APIEPMap[apiEP.Name])
 }
 
 // createAPI
@@ -71,23 +70,24 @@ func (a *app) createAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if api.APIEPs != nil { // api.Name only valid request parm in this method
-		errHandler(&w, http.StatusBadRequest, "ERROR: createAPI: 'Name' is the only valid field for /api request")
-		return
-	}
-	if a.apis.Exists(api) {
+	if _, exists := a.apis.APIMap[api.Name]; exists {
 		errHandler(&w, http.StatusConflict, "ERROR: createAPI: Requested API object exists")
 		return
 	}
-	a.apis.AddAPI(api)
-	apiPtr := a.apis.GetAPI(api.Name)
+	if api.APIEPMap != nil { // api.Name only valid request parm in this method
+		errHandler(&w, http.StatusBadRequest, "ERROR: createAPI: 'Name' is the only valid field for /api request")
+		return
+	}
+
+	api.APIEPMap = make(map[string]agw.APIEndpoint)
+	a.apis.APIMap[api.Name] = api
 
 	// Create default endpoint and append to new api
 	defaultRequest := agw.Request{RequestBody: "", RequestURL: "https://httpbin.org/get", RequestVerb: "GET"}
-	defaultEndpoint := agw.APIEndpoint{Name: "default", Description: "default endpoint", ParentName: apiPtr.Name, Request: defaultRequest}
-	apiPtr.AppendEndpoint(defaultEndpoint)
+	defaultEndpoint := agw.APIEndpoint{Name: "default", Description: "default endpoint", ParentName: api.Name, Request: defaultRequest}
+	a.apis.APIMap[api.Name].APIEPMap[defaultEndpoint.Name] = defaultEndpoint
 
-	json.NewEncoder(w).Encode(apiPtr)
+	json.NewEncoder(w).Encode(a.apis.APIMap[api.Name])
 }
 
 // executeAPI will execute every endpoint in the endpoint slice
@@ -96,14 +96,14 @@ func (a *app) executeAPI(w http.ResponseWriter, r *http.Request) {
 	defer a.apis.RUnlock()
 
 	vars := mux.Vars(r)
-	api := vars["api"]
+	apiName := vars["api"]
 
-	apiPtr := a.apis.GetAPI(api)
-	if apiPtr == nil {
+	api, exists := a.apis.APIMap[apiName]
+	if !exists {
 		errHandler(&w, http.StatusNotFound, "ERROR: executeAPI: API not found")
 		return
 	}
-	for _, ep := range apiPtr.APIEPs {
+	for _, ep := range api.APIEPMap {
 		// Execute endpoint
 		resp, err := ep.Execute()
 		if err != nil {
@@ -121,17 +121,25 @@ func (a *app) executeAPIEndpoint(w http.ResponseWriter, r *http.Request) {
 	defer a.apis.RUnlock()
 
 	vars := mux.Vars(r)
-	api := vars["api"]
+	apiName := vars["api"]
 	ep := vars["endpoint"]
 
 	// Get API
-	apiPtr := a.apis.GetAPI(api)
-	if apiPtr == nil {
+	api, exists := a.apis.APIMap[apiName]
+	if !exists {
+		errHandler(&w, http.StatusNotFound, "ERROR: executeAPIEndpoint: API not found")
+		return
+	}
+
+	// Get Endpoint
+	apiEP, exists := a.apis.APIMap[api.Name].APIEPMap[ep]
+	if !exists {
 		errHandler(&w, http.StatusNotFound, "ERROR: executeAPIEndpoint: API Endpoint not found")
 		return
 	}
+
 	// Execute endpoint
-	resp, err := apiPtr.GetAPIEndpoint(ep).Execute()
+	resp, err := apiEP.Execute()
 	if err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: executeAPIEndpoint:"+err.Error())
 		return
@@ -163,7 +171,7 @@ func (a *app) listAPIs(w http.ResponseWriter, r *http.Request) {
 	a.apis.RLock()
 	defer a.apis.RUnlock()
 
-	if err := json.NewEncoder(w).Encode(a.apis.APIArr); err != nil {
+	if err := json.NewEncoder(w).Encode(a.apis.APIMap); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIs: "+err.Error())
 	}
 }
@@ -176,7 +184,14 @@ func (a *app) listAPI(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	apiName := vars["api"]
-	if err := json.NewEncoder(w).Encode(a.apis.GetAPI(apiName)); err != nil {
+
+	api, exists := a.apis.APIMap[apiName]
+	if !exists {
+		errHandler(&w, http.StatusNotFound, "ERROR: listAPI: "+"API does not exist")
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(api); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPI: "+err.Error())
 	}
 }
@@ -190,7 +205,11 @@ func (a *app) listAPIEndpoints(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	apiName := vars["api"]
 	epName := vars["endpoint"]
-	ep := a.apis.GetAPI(apiName).GetAPIEndpoint(epName)
+	ep, exists := a.apis.APIMap[apiName].APIEPMap[epName]
+	if !exists {
+		errHandler(&w, http.StatusNotFound, "ERROR: listAPIEndpoints: "+"API or Endpoint does not exist")
+		return
+	}
 	if err := json.NewEncoder(w).Encode(ep); err != nil {
 		errHandler(&w, http.StatusInternalServerError, "ERROR: listAPIEndpoints: "+err.Error())
 	}
@@ -205,25 +224,23 @@ func (a *app) delete(w http.ResponseWriter, r *http.Request) {
 	apiName := vars["api"]
 	ep := vars["endpoint"]
 
-	apiPtr, i := a.apis.GetAPIIndex(apiName)
-	if apiPtr == nil {
+	api, exists := a.apis.APIMap[apiName]
+	if !exists {
 		errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API object does not exist")
 		return
 	}
 
 	if ep == "" { // delete API
-		log.Printf("Deleted API: '../%v'\n", apiPtr.Name)
-		a.apis.APIArr = append(a.apis.APIArr[:i], a.apis.APIArr[i+1:]...) // delete i
+		delete(a.apis.APIMap, api.Name)
 		return
 	} else { // delete API Endpoint
-		apiEPPtr, i := apiPtr.GetAPIEndpointIndex(ep)
-		if apiEPPtr == nil || apiEPPtr.Name == "default" {
+		apiEP, exists := api.APIEPMap[ep]
+		if !exists || apiEP.Name == "default" {
 			errHandler(&w, http.StatusNotFound, "ERROR: delete: Requested API Endpoint object does not exist or is not available for deletion")
 			return
 		}
-		log.Printf("Deleted API Endpoint: '../%v/%v'\n", apiPtr.Name, apiEPPtr.Name)
-		apiPtr.APIEPs = append(apiPtr.APIEPs[:1], apiPtr.APIEPs[i+1:]...) // delete i
-		return
+		delete(a.apis.APIMap[apiName].APIEPMap, ep)
+		log.Printf("Deleted API Endpoint: '../%v/%v'\n", api.Name, apiEP.Name)
 	}
 	errHandler(&w, http.StatusNotFound, "ERROR: deleteAPI: Unable to delete API")
 }
