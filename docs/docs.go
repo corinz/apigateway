@@ -5,7 +5,7 @@
 //     Schemes: https
 //     BasePath: /
 //     Version: 1.0.0
-//     Host: localhost
+//     Host: apigateway.gbsd.fences.dsop.io
 //
 //     Consumes:
 //     - application/json

@@ -3,6 +3,7 @@ clean:
 	go clean
 	go mod tidy
 	go fmt ./...
+	rm -f cmd/server/apigateway.json
 
 cert-renew:
 	rm -f .cert/localhost*
@@ -12,18 +13,10 @@ run:
 	go fmt ./...
 	go run cmd/server/main.go  
 
-build:
-	go fmt ./...
+build: clean
 	CGO_ENABLED=0 GOOS=darwin go build -o bin/apigateway-darwin cmd/server/main.go
 	CGO_ENABLED=0 GOOS=linux go build -o bin/apigateway cmd/server/main.go
 	CGO_ENABLED=0 GOOS=windows go build -o bin/apigateway.exe cmd/server/main.go
-
-docker:
-	go fmt ./...
-	@[ "${REG}" ] || read -p "Container tag {repo}/{image}:{tag}: " REG \
-	&& echo $$REG \
-	&& docker build -t $$REG . \
-	&& docker push $$REG
 
 swagger-check:
 	which swagger || (go get -u github.com/go-swagger/go-swagger/cmd/swagger)
@@ -36,3 +29,7 @@ swagger: swagger-check swagger-gen
 
 swagger-serve: swagger-check swagger-gen
 	swagger validate swagger.json && swagger serve -F=swagger swagger.json
+
+docker: swagger clean
+	docker build -t registry.gbsd.fences.dsop.io/gbsd/products/go-api-gateway/apigateway .
+	docker push registry.gbsd.fences.dsop.io/gbsd/products/go-api-gateway/apigateway    

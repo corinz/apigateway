@@ -14,7 +14,7 @@
     "title": "API Gateway.",
     "version": "1.0.0"
   },
-  "host": "localhost",
+  "host": "apigateway.gbsd.fences.dsop.io",
   "basePath": "/",
   "paths": {
     "/api": {
@@ -243,9 +243,9 @@
       "description": "API represents a slice of type: APIEndpoint",
       "type": "object",
       "properties": {
-        "APIEPs": {
-          "type": "array",
-          "items": {
+        "APIEPMap": {
+          "type": "object",
+          "additionalProperties": {
             "$ref": "#/definitions/APIEndpoint"
           }
         },
@@ -278,9 +278,9 @@
       "description": "APIs represents a slice of type: API",
       "type": "object",
       "properties": {
-        "APIArr": {
-          "type": "array",
-          "items": {
+        "APIMap": {
+          "type": "object",
+          "additionalProperties": {
             "$ref": "#/definitions/API"
           }
         }

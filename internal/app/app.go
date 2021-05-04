@@ -29,7 +29,8 @@ func (a *app) Startup() {
 		a.load()
 	}
 	a.setupRoutes()
-	log.Fatal(a.server.ListenAndServeTLS(".cert/localhost.crt", ".cert/localhost.key"))
+	a.server.Addr = ":8080"
+	log.Fatal(a.server.ListenAndServe())
 }
 
 //TODO review this
